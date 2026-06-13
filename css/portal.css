@@ -1,0 +1,64 @@
+/* NOVA ARCADE — portal */
+.wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
+
+/* topbar portal */
+.nav { display: flex; align-items: center; gap: 16px; padding: 18px 22px; max-width: var(--maxw); margin: 0 auto; }
+.logo { font-family: var(--font-display); font-size: 26px; letter-spacing: 1px; line-height: 1; }
+.logo .a { color: var(--accent); text-shadow: var(--glow) color-mix(in srgb, var(--accent) 60%, transparent); }
+.logo .b { color: var(--accent-2); text-shadow: var(--glow) color-mix(in srgb, var(--accent-2) 55%, transparent); }
+.nav .spacer { flex: 1; }
+
+/* hero */
+.hero { max-width: var(--maxw); margin: 18px auto 8px; padding: 0 22px; position: relative; }
+.hero-card {
+  position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: 22px;
+  padding: 54px 40px; background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 55%),
+    linear-gradient(300deg, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 50%),
+    var(--surface-solid);
+  box-shadow: var(--shadow);
+}
+.hero-card::before {
+  content: ""; position: absolute; inset: 0; opacity: .5; pointer-events: none;
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 8%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent);
+  mask-image: linear-gradient(180deg, #000, transparent);
+}
+.hero h1 { position: relative; font-size: clamp(34px, 6vw, 62px); line-height: .98; }
+.hero h1 .a { color: var(--accent); } .hero h1 .b { color: var(--accent-2); }
+.hero p { position: relative; max-width: 540px; margin-top: 16px; color: var(--text-dim); font-size: 16px; font-weight: 500; }
+.hero .stats { position: relative; display: flex; gap: 26px; margin-top: 24px; flex-wrap: wrap; }
+.hero .stat b { font-family: var(--font-display); font-size: 22px; color: var(--text); display: block; }
+.hero .stat span { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+/* filtros */
+.filters { max-width: var(--maxw); margin: 30px auto 14px; padding: 0 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+.chip { font-family: var(--font-ui); font-weight: 600; font-size: 13px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); cursor: pointer; transition: var(--speed); }
+.chip:hover { color: var(--text); border-color: var(--accent); }
+.chip.active { background: var(--accent); color: #04040a; border-color: var(--accent); }
+
+/* grid de juegos */
+.grid { max-width: var(--maxw); margin: 0 auto 60px; padding: 0 22px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.card {
+  position: relative; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+  background: var(--surface-solid); cursor: pointer; transition: transform var(--speed) ease, border-color var(--speed) ease, box-shadow var(--speed) ease;
+  display: flex; flex-direction: column; min-height: 210px; animation: rise .5s both;
+}
+.card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: var(--glow) color-mix(in srgb, var(--accent) 30%, transparent), var(--shadow); }
+.card .art { height: 120px; display: grid; place-items: center; font-size: 54px; position: relative; overflow: hidden; }
+.card .art::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--card-c) 12%, transparent) 0 10px, transparent 10px 20px); }
+.card .art .emoji { position: relative; z-index: 1; filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+.card .meta { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.card .meta h3 { font-size: 16px; font-family: var(--font-display); }
+.card .meta .cat { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.card .meta .desc { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+.card .badge { position: absolute; top: 10px; right: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 4px 8px; border-radius: 999px; }
+.badge.ready { background: var(--accent-3); color: #04040a; }
+.badge.soon { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+.card.soon { cursor: default; opacity: .72; }
+.card.soon:hover { transform: none; border-color: var(--border); box-shadow: none; }
+
+footer { text-align: center; padding: 30px; color: var(--text-dim); font-size: 12px; border-top: 1px solid var(--border); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }

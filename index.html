@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOVA ARCADE — juegos web</title>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('nova-theme')||'dark')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/portal.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="logo"><span class="a">NOVA</span> <span class="b">ARCADE</span></div>
+    <div class="spacer"></div>
+    <div id="nova-gear-host"></div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-card">
+      <h1><span class="a">Juega</span> sin descargar.<br><span class="b">Directo en el navegador.</span></h1>
+      <p>Una colección creciente de clásicos y originales. Cada juego con su propia configuración, audio y tema. Sin instalar nada.</p>
+      <div class="stats">
+        <div class="stat"><b id="st-ready">3</b><span>jugables ahora</span></div>
+        <div class="stat"><b id="st-total">14</b><span>en el roadmap</span></div>
+        <div class="stat"><b>$0</b><span>gratis</span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="filters" id="filters"></div>
+  <main class="grid" id="grid"></main>
+  <footer>NOVA ARCADE · hecho con el ecosistema JARVIS · <span id="year"></span></footer>
+
+  <script src="js/theme.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/portal.js"></script>
+</body>
+</html>

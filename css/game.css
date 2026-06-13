@@ -1,0 +1,35 @@
+/* NOVA ARCADE — shell común de juegos */
+.game-main { max-width: 720px; margin: 0 auto; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.hud { display: flex; gap: 22px; align-items: center; justify-content: center; flex-wrap: wrap; width: 100%; }
+.hud .stat { text-align: center; }
+.hud .stat b { font-family: var(--font-display); font-size: 26px; color: var(--accent); display: block; line-height: 1; }
+.hud .stat span { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
+
+.stage {
+  position: relative; border: 2px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-2); box-shadow: var(--glow) color-mix(in srgb, var(--accent) 18%, transparent), var(--shadow);
+  overflow: hidden; touch-action: none;
+}
+canvas { display: block; image-rendering: pixelated; max-width: 100%; height: auto; }
+
+.controls-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+/* overlay (pausa / game over / inicio) */
+.overlay {
+  position: absolute; inset: 0; display: none; place-items: center; text-align: center;
+  background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(3px); z-index: 5;
+}
+.overlay.show { display: grid; animation: fade .2s ease; }
+.overlay .box { padding: 26px; }
+.overlay h2 { font-size: 30px; margin-bottom: 8px; }
+.overlay h2.win { color: var(--accent-3); }
+.overlay h2.lose { color: var(--accent-2); }
+.overlay p { color: var(--text-dim); margin-bottom: 18px; }
+
+/* mando táctil (móvil) */
+.dpad { display: none; gap: 8px; margin-top: 4px; }
+.dpad.show { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 56px); justify-content: center; }
+.dpad button { font-size: 22px; }
+.dpad .up { grid-column: 2; grid-row: 1; } .dpad .left { grid-column: 1; grid-row: 2; }
+.dpad .down { grid-column: 2; grid-row: 2; } .dpad .right { grid-column: 3; grid-row: 2; }
+@media (hover: none) and (pointer: coarse) { .dpad { display: grid; } }

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blocks — NOVA ARCADE</title>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('nova-theme')||'dark')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../css/theme.css">
+<link rel="stylesheet" href="../../css/game.css">
+<style>
+  .play-area { display: flex; gap: 18px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+  .side { display: flex; flex-direction: column; gap: 14px; min-width: 130px; }
+  .panel { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; background: var(--surface-solid); text-align: center; }
+  .panel .lbl { font-family: var(--font-display); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .panel b { font-family: var(--font-display); font-size: 22px; color: var(--accent); display: block; }
+  #next { display: block; margin: 6px auto 0; }
+</style>
+</head>
+<body>
+  <div class="arcade-topbar">
+    <a class="btn" href="../../index.html">← Volver</a>
+    <span class="brand">BLOCKS</span>
+    <span class="spacer"></span>
+    <div id="nova-gear-host"></div>
+  </div>
+
+  <main class="game-main">
+    <div class="play-area">
+      <div class="stage">
+        <canvas id="cv" width="300" height="600"></canvas>
+        <div class="overlay show" id="ov">
+          <div class="box">
+            <h2 id="ov-title">BLOCKS</h2>
+            <p id="ov-msg">← → mover · ↑ rotar · ↓ bajar · espacio: caída dura</p>
+            <button class="btn btn-accent" id="ov-btn">▶ Jugar</button>
+          </div>
+        </div>
+      </div>
+      <div class="side">
+        <div class="panel"><div class="lbl">Siguiente</div><canvas id="next" width="96" height="96"></canvas></div>
+        <div class="panel"><div class="lbl">Puntos</div><b id="score">0</b></div>
+        <div class="panel"><div class="lbl">Líneas</div><b id="lines">0</b></div>
+        <div class="panel"><div class="lbl">Nivel</div><b id="level">1</b></div>
+      </div>
+    </div>
+    <div class="controls-row">
+      <button class="btn" id="pause">⏸ Pausa</button>
+      <button class="btn" id="restart">↻ Reiniciar</button>
+    </div>
+    <div class="dpad" id="dpad">
+      <button class="btn icon-btn up" data-act="rotate">⟳</button>
+      <button class="btn icon-btn left" data-act="left">◀</button>
+      <button class="btn icon-btn down" data-act="down">▼</button>
+      <button class="btn icon-btn right" data-act="right">▶</button>
+    </div>
+  </main>
+
+  <script src="../../js/theme.js"></script>
+  <script src="../../js/audio.js"></script>
+  <script src="../../js/settings.js"></script>
+  <script src="tetris.js"></script>
+</body>
+</html>
