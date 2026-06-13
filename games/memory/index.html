@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory — NOVA ARCADE</title>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('nova-theme')||'dark')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../css/theme.css">
+<link rel="stylesheet" href="../../css/game.css">
+<style>
+  .mem-grid { display: grid; gap: 10px; padding: 16px; }
+  .mcard { aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2);
+    display: grid; place-items: center; font-size: clamp(20px, 5vw, 38px); cursor: pointer; user-select: none;
+    transition: transform .25s, background .2s, box-shadow .2s; transform-style: preserve-3d; position: relative; }
+  .mcard:hover { border-color: var(--accent); }
+  .mcard .face { position: absolute; inset: 0; display: grid; place-items: center; backface-visibility: hidden; border-radius: 10px; }
+  .mcard .back { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, var(--surface-2)), var(--surface-2)); color: var(--accent); }
+  .mcard .front { transform: rotateY(180deg); background: var(--surface-solid); }
+  .mcard.flip { transform: rotateY(180deg); }
+  .mcard.done { box-shadow: var(--glow) color-mix(in srgb, var(--accent-3) 60%, transparent); border-color: var(--accent-3); }
+  .mcard.done .front { color: var(--accent-3); }
+</style>
+</head>
+<body>
+  <div class="arcade-topbar">
+    <a class="btn" href="../../index.html">← Volver</a>
+    <span class="brand">MEMORY</span>
+    <span class="spacer"></span>
+    <div id="nova-gear-host"></div>
+  </div>
+  <main class="game-main">
+    <div class="hud">
+      <div class="stat"><b id="moves">0</b><span>Intentos</span></div>
+      <div class="stat"><b id="pairs">0</b><span>Parejas</span></div>
+      <div class="stat"><b id="time">0:00</b><span>Tiempo</span></div>
+      <div class="stat"><b id="best">—</b><span>Récord</span></div>
+    </div>
+    <div class="stage" style="width:min(460px,92vw)">
+      <div class="mem-grid" id="grid"></div>
+      <div class="overlay show" id="ov"><div class="box">
+        <h2 id="ov-title">MEMORY</h2>
+        <p id="ov-msg">Encuentra todas las parejas en los menos intentos posibles.</p>
+        <button class="btn btn-accent" id="ov-btn">▶ Jugar</button>
+      </div></div>
+    </div>
+    <div class="controls-row"><button class="btn" id="restart">↻ Nuevo</button></div>
+  </main>
+  <script src="../../js/theme.js"></script>
+  <script src="../../js/audio.js"></script>
+  <script src="../../js/settings.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
