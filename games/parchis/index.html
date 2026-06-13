@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parchís — NOVA ARCADE</title>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('nova-theme')||'dark')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../css/theme.css">
+<link rel="stylesheet" href="../../css/game.css">
+</head>
+<body>
+  <div class="arcade-topbar">
+    <a class="btn" href="../../index.html">← Volver</a>
+    <span class="brand">PARCHÍS</span>
+    <span class="spacer"></span>
+    <div id="nova-gear-host"></div>
+  </div>
+  <main class="game-main">
+    <div class="hud">
+      <div class="stat"><b id="turn">TÚ</b><span>Turno</span></div>
+      <div class="stat"><b id="die">–</b><span>Dado</span></div>
+      <div class="stat"><b id="home">0/4</b><span>Tus fichas en meta</span></div>
+    </div>
+    <div class="stage">
+      <canvas id="cv" width="510" height="510"></canvas>
+      <div class="overlay show" id="ov"><div class="box">
+        <h2 id="ov-title">PARCHÍS</h2>
+        <p id="ov-msg">Tú (rojo) vs IA. Saca un 6 para salir. Lleva tus 4 fichas a la meta. Captura en casillas no seguras.</p>
+        <button class="btn btn-accent" id="ov-btn">▶ Jugar</button>
+      </div></div>
+    </div>
+    <div class="controls-row"><button class="btn btn-accent" id="roll">🎲 Tirar dado</button><button class="btn" id="restart">↻ Nueva</button></div>
+  </main>
+  <script src="../../js/theme.js"></script>
+  <script src="../../js/audio.js"></script>
+  <script src="../../js/settings.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

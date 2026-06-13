@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNO — NOVA ARCADE</title>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('nova-theme')||'dark')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../css/theme.css">
+<link rel="stylesheet" href="../../css/game.css">
+<style>
+  .uno-stage { position: relative; }
+  .colorpick { position: absolute; inset: 0; display: none; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(3px); z-index: 6; }
+  .colorpick.show { display: grid; }
+  .colorpick .box { text-align: center; }
+  .colorpick h3 { font-family: var(--font-display); margin-bottom: 14px; }
+  .swatches { display: flex; gap: 12px; }
+  .swatch { width: 60px; height: 60px; border-radius: 12px; border: 2px solid var(--border); cursor: pointer; transition: transform .15s; }
+  .swatch:hover { transform: scale(1.1); }
+  .msg { text-align:center; min-height: 20px; color: var(--text-dim); font-size: 13px; font-weight:600; }
+</style>
+</head>
+<body>
+  <div class="arcade-topbar">
+    <a class="btn" href="../../index.html">← Volver</a>
+    <span class="brand">UNO</span>
+    <span class="spacer"></span>
+    <div id="nova-gear-host"></div>
+  </div>
+  <main class="game-main">
+    <div class="msg" id="msg">Tu turno. Juega una carta que coincida en color o número, o roba.</div>
+    <div class="stage uno-stage" style="width:min(680px,96vw)">
+      <canvas id="cv" width="672" height="480"></canvas>
+      <div class="colorpick" id="colorpick"><div class="box">
+        <h3>Elige un color</h3>
+        <div class="swatches">
+          <div class="swatch" data-c="r" style="background:#ff3b3b"></div>
+          <div class="swatch" data-c="y" style="background:#ffd23b"></div>
+          <div class="swatch" data-c="g" style="background:#3bff7b"></div>
+          <div class="swatch" data-c="b" style="background:#3b9bff"></div>
+        </div>
+      </div></div>
+      <div class="overlay show" id="ov"><div class="box">
+        <h2 id="ov-title">UNO</h2>
+        <p id="ov-msg">Tú vs 3 IA. Quédate sin cartas. Coincide color o número; comodines cambian el color.</p>
+        <button class="btn btn-accent" id="ov-btn">▶ Jugar</button>
+      </div></div>
+    </div>
+    <div class="controls-row"><button class="btn" id="draw">🂠 Robar</button><button class="btn" id="restart">↻ Nuevo</button></div>
+  </main>
+  <script src="../../js/theme.js"></script>
+  <script src="../../js/audio.js"></script>
+  <script src="../../js/settings.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
