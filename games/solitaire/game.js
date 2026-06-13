@@ -20,7 +20,7 @@
     stock=deck; stock.forEach(c=>c.up=false);
     sel=null; moves=0; updateHUD();
   }
-  function updateHUD(){ movesEl.textContent=moves; const f=found.reduce((a,p)=>a+p.length,0); foundEl.textContent=f+"/52"; }
+  function updateHUD(){ movesEl.textContent=moves; const f=found.reduce((a,p)=>a+p.length,0); foundEl.textContent=f+"/52"; if(typeof updateAutoBtn==="function") updateAutoBtn(); }
 
   function start(){ if(state==="play")return; if(state!=="play") deal(); state="play"; ov.classList.remove("show"); NovaAudio.resume(); if(!NovaAudio.isMusicOn()&&!NovaAudio.get().muteMusic) NovaAudio.startMusic("neon",92); t0=Date.now(); clearInterval(timer); timer=setInterval(tick,500); draw(); }
   function tick(){ const s=((Date.now()-t0)/1000)|0; timeEl.textContent=`${(s/60)|0}:${String(s%60).padStart(2,"0")}`; }
@@ -106,6 +106,33 @@
     }
     if(any){ moves++; updateHUD(); NovaAudio.play("point"); draw(); checkWin(); }
   }
+  // ¿el solitario ya está "resuelto"? (ninguna carta boca abajo en la mesa)
+  function allFaceUp(){ return tableau.every(p => p.every(c => c.up)); }
+  // Auto-completar: cuando ya no quedan cartas tapadas, mueve todo a las fundaciones
+  // (ciclando el mazo/descarte si hace falta) de forma animada.
+  function autoComplete(){
+    if(state!=="play") return;
+    let guard=0;
+    function tickComplete(){
+      if(state!=="play") return;
+      if(found.reduce((a,p)=>a+p.length,0)===52) return;
+      if(guard++>400) return;
+      // 1) ¿hay una carta enviable a fundación? (waste o cima de columna)
+      let moved=false;
+      if(waste.length){ const c=waste[waste.length-1]; for(let i=0;i<4;i++) if(canFound(c,i)){ found[i].push(waste.pop()); moved=true; break; } }
+      if(!moved) for(let col=0;col<7;col++){ const p=tableau[col]; if(p.length&&p[p.length-1].up){ const c=p[p.length-1]; for(let i=0;i<4;i++) if(canFound(c,i)){ found[i].push(p.pop()); flipExposed(); moved=true; break; } } if(moved)break; }
+      // 2) si no, ciclar el mazo para exponer otra carta del descarte
+      if(!moved && (stock.length||waste.length)) { drawStockSilent(); moved=true; }
+      if(moved){ moves++; NovaAudio.play("point"); updateHUD(); draw(); setTimeout(tickComplete, 90); }
+      else checkWin();
+      checkWin();
+    }
+    tickComplete();
+  }
+  function drawStockSilent(){
+    if(!stock.length){ if(!waste.length) return; stock=waste.reverse().map(c=>({...c,up:false})); waste=[]; return; }
+    const n=cfg.draw==="3"?3:1; for(let k=0;k<n&&stock.length;k++){ const c=stock.pop(); c.up=true; waste.push(c); }
+  }
   function checkWin(){ if(found.reduce((a,p)=>a+p.length,0)===52){ state="over"; clearInterval(timer); NovaAudio.stopMusic(); NovaAudio.play("win"); ovTitle.textContent="¡GANASTE!"; ovTitle.className="win"; ovMsg.textContent=`${moves} movimientos · ${timeEl.textContent}`; ovBtn.textContent="↻ Nuevo"; ov.classList.add("show"); } }
 
   // ── render ──
@@ -142,7 +169,9 @@
     trySelectThenMove(hit(x,y));
   });
   ovBtn.onclick=()=>{ if(state==="over"){ deal(); } start(); };
-  document.getElementById("auto").onclick=()=>{ if(state==="play") autoFoundation(); };
+  const autoBtn=document.getElementById("auto");
+  autoBtn.onclick=()=>{ if(state!=="play")return; if(allFaceUp()) autoComplete(); else autoFoundation(); };
+  function updateAutoBtn(){ if(state==="play" && allFaceUp() && found.reduce((a,p)=>a+p.length,0)<52){ autoBtn.textContent="✓ Completar"; autoBtn.classList.add("btn-accent"); } else { autoBtn.textContent="⚡ Auto-fundación"; autoBtn.classList.remove("btn-accent"); } }
   document.getElementById("restart").onclick=()=>{ clearInterval(timer); deal(); state="idle"; ovTitle.textContent="SOLITARIO"; ovTitle.className=""; ovMsg.textContent="Klondike. Roba del mazo y ordena por palo."; ovBtn.textContent="▶ Jugar"; ov.classList.add("show"); draw(); };
 
   NovaSettings.mount({ gameId:"solitaire", onChange:()=>draw(), extra:[

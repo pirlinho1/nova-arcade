@@ -15,7 +15,7 @@ const CATALOG = [
   { id: "haxball", title: "HaxBall FC",   cat: "Deportes",   emoji: "⚽", color: "#3bff9e", ready: true,  url: "games/haxball/", desc: "Fútbol físico vs IA." },
   { id: "slots",   title: "Lucky Spin",   cat: "Casino",     emoji: "🎰", color: "#ffd14d", ready: true,  url: "games/slots/",   desc: "Tragaperras de fichas. Jackpot 7️⃣." },
   { id: "cards",   title: "Más cartas",   cat: "Cartas",     emoji: "🂡", color: "#22d3ee", ready: false, desc: "Póker, carioca (pronto)." },
-  { id: "platform",title: "Jump Quest",   cat: "Plataformas",emoji: "🍄", color: "#ff5630", ready: false, desc: "Plataformas tipo Mario / Cuphead." },
+  { id: "platform",title: "Jump Quest",   cat: "Plataformas",emoji: "🍄", color: "#ff5630", ready: true,  url: "games/platform/", desc: "Plataformas: salta, junta monedas, llega a la meta." },
   { id: "rpg",     title: "Soul Tale",    cat: "RPG",        emoji: "⚔️", color: "#a98bff", ready: false, desc: "RPG narrativo tipo Undertale." },
   { id: "tycoon",  title: "Biz Tycoon",   cat: "Gestión",    emoji: "🍕", color: "#ff9d2e", ready: false, desc: "Maneja pizzería, súper, etc." },
   { id: "sim",     title: "Sim Lab",      cat: "Simuladores",emoji: "🛠️", color: "#3bd1ff", ready: false, desc: "Simuladores varios." },
