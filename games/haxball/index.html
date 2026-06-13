@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HaxBall FC — NOVA ARCADE</title>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('nova-theme')||'dark')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../css/theme.css">
+<link rel="stylesheet" href="../../css/game.css">
+</head>
+<body>
+  <div class="arcade-topbar">
+    <a class="btn" href="../../index.html">← Volver</a>
+    <span class="brand">HAXBALL FC</span>
+    <span class="spacer"></span>
+    <div id="nova-gear-host"></div>
+  </div>
+  <main class="game-main">
+    <div class="hud">
+      <div class="stat"><b id="sp">0</b><span>Tú</span></div>
+      <div class="stat"><b id="sa">0</b><span>IA</span></div>
+    </div>
+    <div class="stage">
+      <canvas id="cv" width="640" height="384"></canvas>
+      <div class="overlay show" id="ov"><div class="box">
+        <h2 id="ov-title">HAXBALL FC</h2>
+        <p id="ov-msg">WASD/flechas para moverte, ESPACIO para patear. Mete la pelota en la portería derecha.</p>
+        <button class="btn btn-accent" id="ov-btn">▶ Jugar</button>
+      </div></div>
+    </div>
+    <div class="controls-row"><button class="btn" id="pause">⏸ Pausa</button><button class="btn" id="restart">↻ Reiniciar</button></div>
+    <div class="dpad" id="dpad">
+      <button class="btn icon-btn up" data-dir="up">▲</button>
+      <button class="btn icon-btn left" data-dir="left">◀</button>
+      <button class="btn icon-btn kick" data-dir="kick" style="grid-column:2;grid-row:2;font-size:14px">⚽</button>
+      <button class="btn icon-btn right" data-dir="right">▶</button>
+      <button class="btn icon-btn down" data-dir="down" style="grid-column:2;grid-row:3">▼</button>
+    </div>
+  </main>
+  <script src="../../js/theme.js"></script>
+  <script src="../../js/audio.js"></script>
+  <script src="../../js/settings.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
