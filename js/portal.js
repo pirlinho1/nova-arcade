@@ -8,7 +8,7 @@ const CATALOG = [
   { id: "damas",   title: "Damas",        cat: "Mesa",       emoji: "⛀",  color: "#22d3ee", ready: true,  url: "games/damas/",  desc: "Damas vs IA, captura obligatoria." },
   { id: "chess",   title: "Ajedrez",      cat: "Mesa",       emoji: "♟️", color: "#c0c0e0", ready: true,  url: "games/chess/",  desc: "Ajedrez completo vs IA (minimax)." },
   { id: "solitaire",title:"Solitario",    cat: "Cartas",     emoji: "🃏", color: "#3bff9e", ready: true,  url: "games/solitaire/", desc: "Klondike. Ordena los palos." },
-  { id: "uno",     title: "UNO",          cat: "Cartas",     emoji: "🂡", color: "#ff3b3b", ready: true,  url: "games/uno/",    desc: "Tú vs 3 IA. ¡Quédate sin cartas!" },
+  { id: "uno",     title: "Color Rush",   cat: "Cartas",     emoji: "🂡", color: "#ff3b51", ready: true,  url: "games/uno/",    desc: "Cartas de descarte vs IA. ¡Quédate sin cartas!" },
   { id: "parchis", title: "Parchís",      cat: "Mesa",       emoji: "🎲", color: "#ffd23b", ready: true,  url: "games/parchis/", desc: "Ludo vs IA. Lleva tus 4 fichas." },
   { id: "fps",     title: "Strike Force",  cat: "Acción",     emoji: "🔫", color: "#ff2e88", ready: true,  url: "games/fps/",    desc: "FPS 3D (Three.js): 5v5, C4, arsenal e IA." },
   { id: "kart",    title: "Turbo Cups",   cat: "Carreras",   emoji: "🏎️", color: "#ff7b2e", ready: true,  url: "games/kart/",   desc: "Carreras top-down: drift y rivales IA." },
