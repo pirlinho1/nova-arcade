@@ -12,9 +12,12 @@
 <style>
   .fps-stage { position: relative; width: 100%; max-width: 860px; }
   #cv { width: 100%; height: auto; display:block; background:#11151d; image-rendering:auto; }
-  .crosshair { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:6; }
-  .crosshair i { position:absolute; background:rgba(255,255,255,.9); box-shadow:0 0 3px rgba(0,0,0,.9); }
-  .crosshair .h { width:16px; height:2px; left:-8px; top:-1px; } .crosshair .v { width:2px; height:16px; left:-1px; top:-8px; }
+  .crosshair { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:6; --spread:7px; --cc:#ffffff; }
+  .crosshair i { position:absolute; background:var(--cc); box-shadow:0 0 3px rgba(0,0,0,.95); transition:transform .05s linear; }
+  .crosshair .t { width:2px; height:7px; left:-1px; top:calc(-1 * var(--spread) - 7px); }
+  .crosshair .b { width:2px; height:7px; left:-1px; top:var(--spread); }
+  .crosshair .l { width:7px; height:2px; top:-1px; left:calc(-1 * var(--spread) - 7px); }
+  .crosshair .r { width:7px; height:2px; top:-1px; left:var(--spread); }
   .crosshair .d { width:3px; height:3px; left:-1.5px; top:-1.5px; border-radius:50%; background:var(--accent); }
   .fps-hud { position:absolute; left:0; right:0; bottom:0; display:flex; justify-content:space-between; align-items:flex-end;
              padding:12px 16px; pointer-events:none; z-index:6; font-family:var(--font-display); }
@@ -34,6 +37,21 @@
   .feed div { font-size:12px; background:color-mix(in srgb,var(--bg) 55%, transparent); padding:2px 8px; border-radius:6px; }
   .lock-hint { position:absolute; left:50%; bottom:60px; transform:translateX(-50%); z-index:6; pointer-events:none; font-size:12px; color:var(--text-dim); background:color-mix(in srgb,var(--bg) 55%, transparent); padding:4px 10px; border-radius:8px; }
   .lock-hint.hide { display:none; }
+  .fps-hud .money b { color:#ffd24d; font-size:20px; } .fps-hud .nade b { color:#9bd17a; font-size:18px; }
+  /* menú de compra */
+  .buy { display:none; flex-direction:column; gap:10px; max-width:460px; margin:0 auto; }
+  .buy.show { display:flex; }
+  .buy h3 { font-family:var(--font-display); color:var(--accent); margin:0; }
+  .buy .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .buy .item { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:var(--surface-2); cursor:pointer; font-size:14px; transition:border-color .1s, transform .1s; }
+  .buy .item:hover:not(.dis) { border-color:var(--accent); transform:translateY(-2px); }
+  .buy .item .price { font-family:var(--font-display); color:#ffd24d; font-size:13px; }
+  .buy .item.dis { opacity:.4; cursor:not-allowed; }
+  .buy .item.owned { border-color:var(--accent-3); }
+  .buy .money-line { color:var(--text-dim); font-size:13px; } .buy .money-line b { color:#ffd24d; font-family:var(--font-display); }
+  .ads-vig { position:absolute; inset:0; pointer-events:none; z-index:5; opacity:0; transition:opacity .1s;
+             background:radial-gradient(circle at 50% 50%, transparent 26%, rgba(0,0,0,.55) 42%, #000 60%); }
+  .ads-vig.on { opacity:1; }
   .hitmark { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scale(1); color:#fff; font-weight:700; font-size:22px; z-index:7; opacity:0; pointer-events:none; text-shadow:0 0 4px #000; }
   .hitmark.on { animation:hm .25s ease-out; }
   @keyframes hm { 0%{opacity:1;transform:translate(-50%,-50%) scale(.6)} 100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)} }
@@ -51,18 +69,21 @@
       <canvas id="cv" width="860" height="500"></canvas>
       <div class="score"><span class="t red" id="sRed">0</span><span class="round" id="sRound">Ronda 1</span><span class="t blue" id="sBlue">0</span></div>
       <canvas id="mini" width="120" height="120"></canvas>
-      <div class="crosshair"><i class="h"></i><i class="v"></i><i class="d"></i></div>
+      <div class="crosshair" id="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="d"></i></div>
       <div class="hitmark" id="hitmark">✕</div>
+      <div class="ads-vig" id="adsVig"></div>
       <div class="dmg" id="dmg"></div>
       <div class="feed" id="feed"></div>
       <div class="lock-hint" id="lockHint">Clic para capturar el ratón · ESC para soltar</div>
       <div class="fps-hud">
         <div class="blk hp"><b id="hp">100</b> <small>VIDA</small> &nbsp;<span class="ar">+<b id="armor">0</b></span> <small>ARMADURA</small></div>
+        <div class="blk money">💰<b id="money">800</b> &nbsp;<span class="nade">💣<b id="nades">0</b></span></div>
         <div class="blk ammo"><span class="wname" id="wname">PISTOLA</span><br><b id="ammo">12</b><small>/<span id="reserve">∞</span></small></div>
       </div>
       <div class="overlay show" id="ov"><div class="box">
         <h2 id="ov-title">STRIKE FORCE</h2>
-        <p id="ov-msg">WASD moverte · ratón apuntar · clic disparar · 1/2/3 armas · R recargar · E plantar/desactivar C4 · Shift correr · Espacio saltar.<br>Rojo (tú + 4 IA) vs Azul. Elimina al rival o detona la bomba. Gana 3 rondas.</p>
+        <p id="ov-msg">WASD moverte · ratón apuntar · clic disparar · clic-der apuntar (ADS) · 1/2/3 armas · R recargar · G granada · E plantar/desactivar C4 · Shift correr · Espacio saltar.<br>Rojo (tú + 4 IA) vs Azul. Elimina al rival o detona la bomba. Gana 3 rondas.</p>
+        <div class="buy" id="buy"></div>
         <button class="btn btn-accent" id="ov-btn">▶ Jugar</button>
       </div></div>
     </div>
