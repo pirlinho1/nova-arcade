@@ -166,7 +166,7 @@
 
   // ---------- palanca (lever) con física de resorte ----------
   const lever = { p: 0, vel: 0, grabbed: false, armed: false };
-  const RAILX = MW + 45, KTOP = 44, REST_OFF = 40, KSPAN = 214;
+  const RAILX = MW + 88, KTOP = 34, REST_OFF = 46, KSPAN = 232, KR = 34;  // palanca grande (alto ≈ pantalla)
   function knobXY() { return { x: RAILX, y: KTOP + REST_OFF + lever.p * KSPAN }; }
   function stepLever() {
     if (!lever.grabbed) { lever.vel += (0 - lever.p) * 0.32; lever.vel *= 0.58; lever.p += lever.vel; if (Math.abs(lever.p) < 0.001 && Math.abs(lever.vel) < 0.001) { lever.p = 0; lever.vel = 0; } }
@@ -174,21 +174,27 @@
   }
   function leverActive() { return lever.grabbed || Math.abs(lever.vel) > 0.0008 || lever.p > 0.002; }
   function drawLever() {
-    const k = knobXY(), tilt = Math.sin(lever.p * Math.PI) * 6;
-    ctx.fillStyle = "#2a2f3a"; ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 2;
-    roundRect(RAILX - 16, KTOP - 22, 32, 26, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "#161a22"; ctx.beginPath(); ctx.arc(RAILX, KTOP - 9, 6, 0, 7); ctx.fill();
+    const k = knobXY(), tilt = Math.sin(lever.p * Math.PI) * 11;
+    // cuna de montaje (grande)
+    ctx.fillStyle = "#2a2f3a"; ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.lineWidth = 3;
+    roundRect(RAILX - 26, KTOP - 26, 52, 38, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#161a22"; ctx.beginPath(); ctx.arc(RAILX, KTOP - 4, 11, 0, 7); ctx.fill();
+    ctx.fillStyle = "#3a4150"; ctx.beginPath(); ctx.arc(RAILX, KTOP - 4, 5, 0, 7); ctx.fill();
+    // vástago grueso con sombra y brillo
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#9aa0ad"; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(RAILX, KTOP - 6); ctx.lineTo(k.x + tilt, k.y); ctx.stroke();
-    ctx.strokeStyle = "#cfd4dd"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(RAILX, KTOP - 6); ctx.lineTo(k.x + tilt, k.y); ctx.stroke();
-    const g = ctx.createRadialGradient(k.x + tilt - 5, k.y - 6, 2, k.x + tilt, k.y, 16);
-    g.addColorStop(0, "#ff8a8a"); g.addColorStop(.5, "#e0182f"); g.addColorStop(1, "#8a0f1c");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(k.x + tilt, k.y, 15, 0, 7); ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.beginPath(); ctx.arc(k.x + tilt - 5, k.y - 5, 4, 0, 7); ctx.fill();
-    if (!lever.grabbed && lever.p < 0.02 && !spinning) { ctx.fillStyle = "#8893a5"; ctx.font = "10px 'Chakra Petch'"; ctx.textAlign = "center"; ctx.fillText("TIRA ▼", RAILX, KTOP + REST_OFF + KSPAN + 26); }
+    ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 18; ctx.beginPath(); ctx.moveTo(RAILX, KTOP); ctx.lineTo(k.x + tilt, k.y); ctx.stroke();
+    ctx.strokeStyle = "#9aa0ad"; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(RAILX, KTOP); ctx.lineTo(k.x + tilt, k.y); ctx.stroke();
+    ctx.strokeStyle = "#e6ebf2"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(RAILX - 2, KTOP); ctx.lineTo(k.x + tilt - 2, k.y); ctx.stroke();
+    // bola roja grande con brillo
+    ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.beginPath(); ctx.ellipse(k.x + tilt, k.y + KR * .7, KR * .8, KR * .25, 0, 0, 7); ctx.fill();
+    const g = ctx.createRadialGradient(k.x + tilt - KR * .35, k.y - KR * .4, KR * .12, k.x + tilt, k.y, KR + 6);
+    g.addColorStop(0, "#ff9b9b"); g.addColorStop(.45, "#e0182f"); g.addColorStop(1, "#7c0d18");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(k.x + tilt, k.y, KR, 0, 7); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.6)"; ctx.beginPath(); ctx.arc(k.x + tilt - KR * .32, k.y - KR * .34, KR * .26, 0, 7); ctx.fill();
+    if (!lever.grabbed && lever.p < 0.02 && !spinning) { ctx.fillStyle = "#8893a5"; ctx.font = "12px 'Chakra Petch'"; ctx.textAlign = "center"; ctx.fillText("TIRA ▼", RAILX, KTOP + REST_OFF + KR + 26); }
   }
   function cvPos(e) { const r = cv.getBoundingClientRect(); const cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left, cy = (e.touches ? e.touches[0].clientY : e.clientY) - r.top; return { x: cx / r.width * W, y: cy / r.height * H }; }
-  function leverDown(e) { if (state !== "play") return; const p = cvPos(e); const k = knobXY(); if (Math.hypot(p.x - k.x, p.y - k.y) < 40 || (p.x > MW + 6 && Math.abs(p.x - RAILX) < 30)) { lever.grabbed = true; lever.armed = false; ensureLoop(); if (e.cancelable) e.preventDefault(); } }
+  function leverDown(e) { if (state !== "play") return; const p = cvPos(e); const k = knobXY(); if (Math.hypot(p.x - k.x, p.y - k.y) < KR + 22 || (p.x > MW + 4 && Math.abs(p.x - RAILX) < 72)) { lever.grabbed = true; lever.armed = false; ensureLoop(); if (e.cancelable) e.preventDefault(); } }
   function leverMove(e) { if (!lever.grabbed) return; const p = cvPos(e); lever.p = Math.max(0, Math.min(1.06, (p.y - KTOP - REST_OFF) / KSPAN)); if (lever.p > 0.72) lever.armed = true; if (e.cancelable) e.preventDefault(); }
   function leverUp() { if (!lever.grabbed) return; lever.grabbed = false; lever.vel = -0.06; tone(180, .06, "square", .4); if (lever.armed) { lever.armed = false; spin(); } ensureLoop(); }
   cv.addEventListener("mousedown", leverDown); window.addEventListener("mousemove", leverMove); window.addEventListener("mouseup", leverUp);
