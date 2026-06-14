@@ -41,6 +41,8 @@
   let winAnim = 0, winShown = 0, winTarget = 0; // conteo animado
   let pulse = 0;          // fase de parpadeo
   let bigText = null, bigT = 0;
+  let anticip = -1, anticipSym = -1, anticipBeat = 0;   // anticipación último rodillo
+  let jackpotShow = 0, shake = 0;                        // secuencia jackpot a pantalla completa
 
   // ---------- audio sintetizado (respeta volumen/mute de NovaAudio) ----------
   function actx() { try { NovaAudio.resume(); } catch (e) {} return window._slotAudio || (window._slotAudio = new (window.AudioContext || window.webkitAudioContext)()); }
@@ -86,7 +88,7 @@
     if (state !== "play" || spinning) return;
     const bet = BETS[betIdx];
     if (credits < bet) { flashMsg("Sin créditos: pulsa Recargar."); return; }
-    credits -= bet; lastWin = 0; wins = []; winShown = 0; winTarget = 0; updateHUD(); save();
+    credits -= bet; lastWin = 0; wins = []; winShown = 0; winTarget = 0; anticip = -1; jackpotShow = 0; updateHUD(); save();
     spinning = true; sweepDown();
     const t = performance.now();
     const base = cfg.fast ? 450 : 850;
@@ -104,10 +106,24 @@
         anySpin = true; r.pos = (r.pos + r.vel) % r.s.length; r.blur = Math.min(1, r.vel);
         if (now >= r.stopAt) {
           r.vel *= 0.9;
-          if (r.vel < 0.05) { r.pos = Math.round(r.pos) % r.s.length; r.spinning = false; r.blur = 0; reelStop(i); }
+          if (r.vel < 0.05) {
+            r.pos = Math.round(r.pos) % r.s.length; r.spinning = false; r.blur = 0; reelStop(i);
+            // ANTICIPACIÓN: al fijar el penúltimo, si los previos coinciden en el centro, alarga el último
+            if (i === REELS - 2 && anticip < 0) {
+              const c0 = symIdxAt(reels[0], 1); let allMatch = true;
+              for (let j = 0; j <= i; j++) if (symIdxAt(reels[j], 1) !== c0) { allMatch = false; break; }
+              const last = reels[REELS - 1];
+              if (allMatch && last.spinning) { last.stopAt = now + (cfg.fast ? 1000 : 1700); last.vel = 0.32; anticip = REELS - 1; anticipSym = c0; anticipBeat = 0; tone(300, .25, "sawtooth", .35, 220); }
+            }
+            if (i === anticip) anticip = -1;   // el último ya cayó
+          }
         }
       } else r.blur *= 0.8;
     });
+    // latidos de tensión durante la anticipación
+    if (anticip >= 0) { anticipBeat += 1; if (anticipBeat % 11 === 0) tone(520 + (anticipBeat / 11) * 60, .05, "square", .4); }
+    if (jackpotShow > 0) jackpotShow--;
+    if (shake > 0) shake = Math.max(0, shake - 0.06);
     if (spinning && !anySpin) { spinning = false; evaluate(); }
     // conteo animado de ganancia
     if (winShown < winTarget) { winShown = Math.min(winTarget, winShown + Math.max(1, Math.ceil((winTarget - winShown) * 0.12))); lastWin = winShown; updateHUD(); if (Math.random() < .6) coinTick(); }
@@ -119,7 +135,7 @@
     stepLever();
     draw();
     // seguir animando si hay algo vivo
-    const alive = anySpin || coins.length || winShown < winTarget || flash > 0 || (wins.length && state === "play") || bigT > 0 || leverActive();
+    const alive = anySpin || coins.length || winShown < winTarget || flash > 0 || (wins.length && state === "play") || bigT > 0 || leverActive() || jackpotShow > 0 || shake > 0;
     if (alive) raf = requestAnimationFrame(loop); else { raf = null; draw(); }
   }
 
@@ -147,8 +163,8 @@
       const big = total >= BETS[betIdx] * 15;
       spawnCoins(jackpot ? 90 : big ? 45 : 18);
       flash = jackpot ? 50 : big ? 24 : 10;
-      if (jackpot) { jackpotFanfare(); bigText = "💥 JACKPOT 💥"; bigT = 150; }
-      else if (big) { winJingle(true); bigText = "¡GRAN PREMIO!"; bigT = 110; }
+      if (jackpot) { jackpotFanfare(); bigText = null; bigT = 0; jackpotShow = 200; shake = 0.9; }
+      else if (big) { winJingle(true); bigText = "¡GRAN PREMIO!"; bigT = 110; shake = 0.5; }
       else winJingle(false);
     } else {
       lastWin = 0; updateHUD();
@@ -205,7 +221,9 @@
   function cellXY(ri, row) { return { x: X0 + ri * (RW + GAP), y: Y0 + 8 + row * RH }; }
 
   function draw() {
-    ctx.fillStyle = css("--bg-2"); ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    if (shake > 0) ctx.translate((Math.random() - .5) * 12 * shake, (Math.random() - .5) * 12 * shake);
+    ctx.fillStyle = css("--bg-2"); ctx.fillRect(-14, -14, W + 28, H + 28);
     // marco máquina con doble borde neón
     ctx.strokeStyle = css("--accent"); ctx.lineWidth = 3; roundRect(6, 6, MW - 12, H - 12, 14); ctx.stroke();
 
@@ -221,15 +239,26 @@
       ctx.save(); roundRect(x, Y0, RW, RH * ROWS + 12, 12); ctx.clip();
       for (let row = -1; row <= ROWS; row++) {
         const frac = (Math.round(r.pos) - r.pos);
-        const sIdx = symIdxAt(r, row);
-        const s = SYM[sIdx];
+        const s = SYM[symIdxAt(r, row)];
         const cy = Y0 + 10 + (row + frac) * RH + RH / 2;
-        ctx.globalAlpha = r.blur > 0.2 ? 0.55 : 1;
-        ctx.font = `${row === 1 ? 56 : 50}px serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(s.e, x + RW / 2, cy);
-        ctx.globalAlpha = 1;
+        const fs = row === 1 ? 56 : 50;
+        ctx.font = `${fs}px serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        if (r.blur > 0.3) {
+          // motion-blur: estiramiento vertical + estela desvanecida
+          const stretch = 1 + Math.min(1.5, r.blur * 1.7);
+          ctx.save(); ctx.translate(x + RW / 2, cy); ctx.scale(1, stretch);
+          ctx.globalAlpha = 0.5; ctx.fillText(s.e, 0, 0);
+          ctx.globalAlpha = 0.16; ctx.fillText(s.e, 0, -RH / stretch); ctx.fillText(s.e, 0, RH / stretch);
+          ctx.restore(); ctx.globalAlpha = 1;
+        } else { ctx.fillText(s.e, x + RW / 2, cy); }
       }
       ctx.restore();
+      // glow de anticipación en el último rodillo
+      if (anticip === i && r.spinning) {
+        const gl = 0.5 + Math.sin(pulse * 2.2) * 0.5;
+        ctx.save(); ctx.strokeStyle = SYM[anticipSym] ? SYM[anticipSym].c : "#ffd24d"; ctx.globalAlpha = 0.5 + gl * 0.5; ctx.lineWidth = 4 + gl * 3;
+        ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 18 * gl; roundRect(x - 2, Y0 - 2, RW + 4, RH * ROWS + 16, 13); ctx.stroke(); ctx.restore(); ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+      }
     }
 
     // líneas y celdas ganadoras (parpadeo)
@@ -260,6 +289,45 @@
       ctx.lineWidth = 5; ctx.strokeStyle = "rgba(0,0,0,.7)"; ctx.strokeText(bigText, 0, 0);
       ctx.fillStyle = SYM[JACK].c; ctx.fillText(bigText, 0, 0); ctx.restore();
     }
+
+    if (jackpotShow > 0) drawJackpot();
+    ctx.restore();   // cierra el wrap del screen-shake
+  }
+
+  function drawJackpot() {
+    const cx = MW / 2, cy = H / 2, k = jackpotShow;
+    // oscurecer + rayos giratorios desde el centro
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(-14, -14, W + 28, H + 28);
+    ctx.translate(cx, cy); ctx.rotate(pulse * 0.5);
+    for (let i = 0; i < 16; i++) {
+      ctx.rotate(Math.PI / 8);
+      ctx.fillStyle = (i % 2 ? "#ffd24d" : "#ff7b2e"); ctx.globalAlpha = 0.18;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(W, -28); ctx.lineTo(W, 28); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1; ctx.restore();
+    // luces parpadeantes en el marco
+    for (let i = 0; i < 28; i++) {
+      const t = i / 28, on = (Math.floor(pulse * 3) + i) % 2;
+      ctx.fillStyle = on ? "#fff2a0" : "#7a4a10";
+      const peri = perimeter(t); ctx.beginPath(); ctx.arc(peri.x, peri.y, 4, 0, 7); ctx.fill();
+    }
+    // texto JACKPOT con pulso y rayo
+    const sc = 1.0 + Math.sin(pulse * 2) * 0.12;
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(sc, sc); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = "800 52px 'Bungee', sans-serif"; ctx.lineWidth = 7; ctx.strokeStyle = "#5a2a00"; ctx.strokeText("JACKPOT", 0, -6);
+    const grd = ctx.createLinearGradient(0, -30, 0, 30); grd.addColorStop(0, "#fff7c2"); grd.addColorStop(.5, "#ffd23b"); grd.addColorStop(1, "#ff8a2e");
+    ctx.fillStyle = grd; ctx.shadowColor = "#ffd24d"; ctx.shadowBlur = 24; ctx.fillText("JACKPOT", 0, -6); ctx.shadowBlur = 0;
+    ctx.font = "700 22px 'Bungee', sans-serif"; ctx.fillStyle = "#fff"; ctx.fillText("+" + winTarget, 0, 34);
+    ctx.restore();
+  }
+  function perimeter(t) {
+    // recorre el borde de la máquina [6..MW-6, 6..H-6]
+    const x0 = 8, y0 = 8, x1 = MW - 8, y1 = H - 8, w = x1 - x0, h = y1 - y0, per = 2 * (w + h); let d = t * per;
+    if (d < w) return { x: x0 + d, y: y0 }; d -= w;
+    if (d < h) return { x: x1, y: y0 + d }; d -= h;
+    if (d < w) return { x: x1 - d, y: y1 }; d -= w;
+    return { x: x0, y: y1 - d };
   }
 
   function drawPaytable() {
