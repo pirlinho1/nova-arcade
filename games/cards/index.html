@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Póker — NOVA ARCADE</title>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('nova-theme')||'dark')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../css/theme.css">
+<link rel="stylesheet" href="../../css/game.css">
+<style>
+  .pk-table { display:flex; flex-direction:column; align-items:center; gap:14px; padding:18px; }
+  .pay { width:100%; max-width:440px; border:1px solid var(--border); border-radius:10px; overflow:hidden; font-size:13px; }
+  .pay div { display:flex; justify-content:space-between; padding:4px 12px; }
+  .pay div:nth-child(odd){ background:color-mix(in srgb,var(--surface-2) 60%,transparent); }
+  .pay div.hot { background:var(--accent); color:#06121f; font-weight:700; }
+  .pay div span:last-child { font-family:var(--font-display); color:var(--accent); }
+  .pay div.hot span:last-child { color:#06121f; }
+  .hand { display:flex; gap:10px; justify-content:center; }
+  .pcard { width:74px; height:104px; border-radius:10px; background:#fafafa; color:#111; position:relative; cursor:pointer;
+           box-shadow:var(--shadow); border:2px solid transparent; transition:transform .12s, border-color .12s; user-select:none; }
+  .pcard:hover { transform:translateY(-4px); }
+  .pcard.held { border-color:var(--accent-3); transform:translateY(-8px); }
+  .pcard.red { color:#d12; }
+  .pcard .r { position:absolute; top:5px; left:7px; font-weight:800; font-size:18px; font-family:var(--font-display); }
+  .pcard .s { position:absolute; bottom:2px; right:7px; font-size:28px; }
+  .pcard .c { position:absolute; inset:0; display:grid; place-items:center; font-size:38px; }
+  .pcard .hold-tag { position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--accent-3); font-weight:700; opacity:0; }
+  .pcard.held .hold-tag { opacity:1; }
+  .pcard.back { background:repeating-linear-gradient(45deg,#2a3550,#2a3550 6px,#1c2438 6px,#1c2438 12px); }
+</style>
+</head>
+<body>
+  <div class="arcade-topbar">
+    <a class="btn" href="../../index.html">← Volver</a>
+    <span class="brand">VIDEO PÓKER</span>
+    <span class="spacer"></span>
+    <div id="nova-gear-host"></div>
+  </div>
+  <main class="game-main">
+    <div class="hud">
+      <div class="stat"><b id="credits">100</b><span>Créditos</span></div>
+      <div class="stat"><b id="bet">5</b><span>Apuesta</span></div>
+      <div class="stat"><b id="lastwin">0</b><span>Ganancia</span></div>
+    </div>
+    <div class="stage" style="width:100%;max-width:480px">
+      <div class="pk-table">
+        <div class="pay" id="paytable"></div>
+        <div class="hand" id="hand"></div>
+        <div id="result" style="min-height:24px;font-family:var(--font-display);font-size:18px;color:var(--accent-3)"></div>
+      </div>
+    </div>
+    <div class="controls-row">
+      <button class="btn" id="betdown">– Apuesta</button>
+      <button class="btn btn-accent" id="deal">🂠 Repartir</button>
+      <button class="btn" id="betup">+ Apuesta</button>
+      <button class="btn" id="reset">↻ Recargar</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:12px">Toca las cartas para <b>mantenerlas</b>, luego «Repartir» para cambiar el resto.</p>
+  </main>
+  <script src="../../js/theme.js"></script>
+  <script src="../../js/audio.js"></script>
+  <script src="../../js/settings.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

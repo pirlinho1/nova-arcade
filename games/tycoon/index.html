@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biz Tycoon — NOVA ARCADE</title>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('nova-theme')||'dark')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../css/theme.css">
+<link rel="stylesheet" href="../../css/game.css">
+<style>
+  .tyc { display:grid; grid-template-columns:1fr; gap:14px; width:100%; max-width:520px; }
+  .shop { display:flex; flex-direction:column; gap:8px; }
+  .up { display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:var(--surface-2); }
+  .up .ic { font-size:26px; } .up .info { flex:1; } .up .info b { display:block; } .up .info small { color:var(--text-dim); }
+  .up button { white-space:nowrap; }
+  .up button:disabled { opacity:.45; }
+  .up .lvl { font-family:var(--font-display); color:var(--accent); min-width:30px; text-align:center; }
+</style>
+</head>
+<body>
+  <div class="arcade-topbar">
+    <a class="btn" href="../../index.html">← Volver</a>
+    <span class="brand">BIZ TYCOON</span>
+    <span class="spacer"></span>
+    <div id="nova-gear-host"></div>
+  </div>
+  <main class="game-main">
+    <div class="hud">
+      <div class="stat"><b id="cash">$0</b><span>Caja</span></div>
+      <div class="stat"><b id="rate">$0/s</b><span>Ingreso</span></div>
+      <div class="stat"><b id="served">0</b><span>Pizzas</span></div>
+    </div>
+    <div class="stage" style="width:100%;max-width:540px">
+      <canvas id="cv" width="520" height="180"></canvas>
+      <div class="overlay show" id="ov"><div class="box">
+        <h2 id="ov-title">BIZ TYCOON</h2>
+        <p id="ov-msg">¡Tu pizzería! Haz clic en el horno (o ESPACIO) para hornear y vender. Reinvierte en mejoras para automatizar y crecer.</p>
+        <button class="btn btn-accent" id="ov-btn">▶ Abrir negocio</button>
+      </div></div>
+    </div>
+    <div class="tyc"><div class="shop" id="shop"></div></div>
+  </main>
+  <script src="../../js/theme.js"></script>
+  <script src="../../js/audio.js"></script>
+  <script src="../../js/settings.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
