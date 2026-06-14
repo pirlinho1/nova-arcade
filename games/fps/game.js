@@ -123,15 +123,24 @@ function buildMap() {
 
 // ---------------- datos ----------------
 const DIFF = { facil: { acc: .55, react: .55, dmg: .7, rof: 1.3 }, normal: { acc: .78, react: .32, dmg: 1, rof: 1 }, dificil: { acc: .92, react: .16, dmg: 1.3, rof: .8 } };
+// Arsenal estilo CS (nombres ORIGINALES). accStand=imprecisión parado (1er disparo),
+// accMove=por velocidad, accAir=saltando; headMult=multiplicador a la cabeza; moveSpd=mult. de velocidad.
 const WEAPONS = {
-  pistol: { name: "Pistola", dmg: 26, rof: 320, spread: .015, mag: 12, reserve: 60, reload: 900, auto: false, pellets: 1, range: 60, kick: .012 },
-  rifle: { name: "Rifle", dmg: 20, rof: 95, spread: .03, mag: 30, reserve: 120, reload: 1500, auto: true, pellets: 1, range: 70, kick: .018 },
-  shotgun: { name: "Escopeta", dmg: 12, rof: 750, spread: .12, mag: 7, reserve: 28, reload: 1800, auto: false, pellets: 8, range: 22, kick: .05 },
+  pistol: { name: "Pistola", dmg: 24, rof: 340, mag: 12, reserve: 60, reload: 900, auto: false, pellets: 1, range: 70, accStand: .0010, accMove: .010, accAir: .10, moveSpd: 1.0, headMult: 3.6 },
+  rifle:  { name: "Rifle",   dmg: 31, rof: 100, mag: 30, reserve: 90, reload: 1500, auto: true, pellets: 1, range: 90, accStand: .0009, accMove: .013, accAir: .13, moveSpd: 0.92, headMult: 4.0 },
+  sniper: { name: "Sniper",  dmg: 115, rof: 1100, mag: 5, reserve: 25, reload: 2200, auto: false, pellets: 1, range: 140, accStand: .0006, accMove: .090, accAir: .18, moveSpd: 0.82, headMult: 2.4, scope: true, hipAcc: .055 },
+};
+// patrones de retroceso DETERMINISTAS (deltas en radianes por disparo: [yaw, pitch↑]).
+// Se aprenden y se contrarrestan tirando del ratón en sentido contrario, como en CS.
+const PAT = {
+  rifle: [[0, .016], [.002, .017], [-.002, .018], [.001, .018], [.004, .016], [-.006, .014], [.010, .012], [.014, .011], [.018, .009], [.012, .008], [-.012, .007], [-.020, .007], [-.024, .006], [-.020, .006], [-.014, .006], [.016, .006], [.022, .005], [.020, .005], [.014, .005], [.008, .005], [-.010, .005], [.010, .005], [-.008, .005], [.006, .005], [-.006, .005]],
+  pistol: [[0, .012], [.003, .011], [-.003, .010], [.004, .009], [-.004, .008], [.005, .008], [-.005, .007], [.004, .007]],
+  sniper: [[0, .03], [.012, .03], [-.012, .03]],
 };
 const BUYS = [
-  { id: "armor", label: "🛡️ Armadura (100)", price: 650, owned: () => me.armor >= 100 },
+  { id: "armor", label: "🛡️ Kevlar (100)", price: 650, owned: () => me.armor >= 100 },
   { id: "rifle", label: "🔫 Rifle", price: 2700, owned: () => me.weapon === "rifle" },
-  { id: "shotgun", label: "💥 Escopeta", price: 2000, owned: () => me.weapon === "shotgun" },
+  { id: "sniper", label: "🎯 Sniper", price: 4750, owned: () => me.weapon === "sniper" },
   { id: "pistol", label: "🔫 Pistola", price: 0, owned: () => me.weapon === "pistol" },
   { id: "nade", label: "💣 Granada", price: 300, owned: () => false },
 ];
@@ -178,7 +187,7 @@ function makeAgent(team, isPlayer, idx) {
   const a = {
     team, isPlayer: !!isPlayer, alive: true, hp: 100,
     armor: isPlayer ? me.armor : 35, x: base.x + (Math.random() - .5), z: base.z + (Math.random() - .5),
-    dir: team === "red" ? 0 : Math.PI, weapon: isPlayer ? me.weapon : (Math.random() < .6 ? "rifle" : "shotgun"),
+    dir: team === "red" ? 0 : Math.PI, weapon: isPlayer ? me.weapon : (Math.random() < .68 ? "rifle" : (Math.random() < .5 ? "sniper" : "pistol")),
     mag: 0, reserve: 0, nextFire: 0, reloadUntil: 0, target: null, seeT: 0, name: (team === "red" ? "R" : "B") + idx, walk: 0,
   };
   giveAmmo(a);
@@ -207,13 +216,15 @@ function buildViewmodel() {
     vm.add(mk(new THREE.BoxGeometry(.06, .22, .1), matDark, 0, -.16, -.1, -.2, 0, 0));
     vm.add(mk(new THREE.BoxGeometry(.06, .1, .2), matDark, 0, -.02, .16));
     vm.add(mk(new THREE.BoxGeometry(.02, .05, .04), matDark, 0, .09, -.3));
-  } else {
-    vm.add(mk(new THREE.BoxGeometry(.1, .13, .6), matMetal, 0, 0, -.2));
-    vm.add(mk(new THREE.CylinderGeometry(.035, .035, .55, 10), matDark, 0, .03, -.32, Math.PI / 2, 0, 0));
-    vm.add(mk(new THREE.BoxGeometry(.08, .08, .16), matDark, 0, -.06, -.18));
+  } else {   // sniper: cuerpo largo + cañón fino + mira
+    vm.add(mk(new THREE.BoxGeometry(.08, .11, .95), matMetal, 0, 0, -.35));
+    vm.add(mk(new THREE.CylinderGeometry(.022, .022, .5, 10), matDark, 0, .02, -.78, Math.PI / 2, 0, 0));
+    vm.add(mk(new THREE.BoxGeometry(.06, .2, .1), matDark, 0, -.15, -.1, -.2, 0, 0));
+    vm.add(mk(new THREE.CylinderGeometry(.05, .05, .26, 12), matDark, 0, .12, -.34, Math.PI / 2, 0, 0)); // tubo de mira
+    vm.add(mk(new THREE.BoxGeometry(.06, .09, .22), matDark, 0, -.02, .2));
   }
   vmFlash = new THREE.Mesh(new THREE.PlaneGeometry(.3, .3), new THREE.MeshBasicMaterial({ color: 0xffdd77, transparent: true, opacity: 0, depthTest: false }));
-  vmFlash.position.set(0, .01, w === "rifle" ? -.62 : w === "shotgun" ? -.55 : -.36); vm.add(vmFlash);
+  vmFlash.position.set(0, .01, w === "rifle" ? -.62 : w === "sniper" ? -1.05 : -.36); vm.add(vmFlash);
   vm.position.set(vmBaseX, -.2, -.45); camera.add(vm);
   if (!camera.parent) scene.add(camera);
 }
@@ -235,33 +246,51 @@ function tracer(from, to) {
 
 // ---------------- disparo ----------------
 const ray = new THREE.Raycaster();
+// imprecisión angular actual del jugador (radianes). 0 = puntería perfecta.
+function currentInacc(w) {
+  const moveSpd = Math.hypot(player.vx || 0, player.vz || 0);
+  let inacc = w.accStand + w.accMove * (moveSpd / 4.6);     // 4.6 ≈ velocidad de carrera
+  if (!onGround) inacc += w.accAir;
+  if (w.scope && !ads) inacc += w.hipAcc;                   // sniper sin mira = muy impreciso
+  return inacc;
+}
 function playerFire() {
   if (gstate !== "play" || !player.alive) return;
   const w = WEAPONS[player.weapon], now = performance.now();
   if (now < player.nextFire || now < player.reloadUntil) return;
   if (player.mag <= 0) { reload(player); return; }
   player.nextFire = now + w.rof; player.mag--; updateHUD();
-  vmRecoil = 1; vmFlash.material.opacity = 1; vmFlash.rotation.z = Math.random() * 6; fireFlash = .06;
-  // aim-punch (menos con ADS y al estar quieto)
-  const punch = w.kick * (ads ? .5 : 1) * (onGround ? 1 : 1.4);
-  recoil.pitch += punch; recoil.yaw += (Math.random() - .5) * punch * .6;
+  vmRecoil = 1; vmFlash.material.opacity = 1; vmFlash.rotation.z = Math.random() * 6; fireFlash = .07;
+  // RETROCESO determinista: kickea la vista según el patrón (tú lo compensas tirando del ratón)
+  const pat = PAT[player.weapon] || PAT.pistol; const pp = pat[Math.min(player.sprayIdx, pat.length - 1)];
+  const km = (player.weapon === "sniper" ? 1 : 1) * (onGround ? 1 : 1.5);
+  recoil.pitch += pp[1] * km; recoil.yaw += pp[0] * km; player.sprayIdx++; player.lastShot = now;
   sndShot(player.weapon);
+  // imprecisión: cono aleatorio que depende del movimiento (parado = 1er disparo perfecto)
+  const inacc = currentInacc(w);
   const muzzle = camera.getWorldPosition(new THREE.Vector3());
-  const spr = w.spread * (ads ? .35 : 1) * (isMoving() ? 1.6 : 1);
   let hitAny = false;
   for (let p = 0; p < w.pellets; p++) {
-    const sx = (Math.random() - .5) * spr, sy = (Math.random() - .5) * spr;
-    ray.setFromCamera(new THREE.Vector2(sx * 12, sy * 12), camera); ray.far = w.range;
+    // desviación gaussiana-ish dentro del cono de imprecisión
+    const a = Math.random() * 6.283, r = inacc * Math.sqrt(Math.random());
+    const sx = Math.cos(a) * r, sy = Math.sin(a) * r;
+    ray.setFromCamera(new THREE.Vector2(sx * 30, sy * 30), camera); ray.far = w.range;
     const hits = ray.intersectObjects(enemyMeshes, false);
     const wallD = rayWall(muzzle, ray.ray.direction, w.range);
     let end;
     if (hits.length && (wallD == null || hits[0].distance < wallD)) {
-      const a = hits[0].object.userData.agent;
-      end = hits[0].point;
-      if (a && a.alive) { const head = end.y > a.hit.position.y + .55; hurt(a, w.dmg * (head ? 1.8 : 1), player); hitAny = true; spawnFx(end, 0xff2b3b, 5, 3); }
+      const ag = hits[0].object.userData.agent; end = hits[0].point;
+      if (ag && ag.alive) {
+        // hitbox: cabeza / pecho / piernas (altura del impacto sobre el cuerpo)
+        const rel = end.y - ag.hit.position.y;        // centro del hitbox ≈ 0.95
+        const head = rel > 0.58, legs = rel < -0.45;
+        const mult = head ? w.headMult : legs ? 0.75 : 1.0;
+        hurt(ag, w.dmg * mult, player, head); hitAny = true; spawnFx(end, head ? 0xffffff : 0xff2b3b, head ? 8 : 5, 3);
+        if (head) tone(1500, .04, "square", .35);
+      }
     } else if (wallD != null) { end = muzzle.clone().add(ray.ray.direction.clone().multiplyScalar(wallD)); spawnFx(end, 0xffd24a, 4, 2); }
     else end = muzzle.clone().add(ray.ray.direction.clone().multiplyScalar(w.range));
-    if (p === 0 || w.pellets > 1) tracer(muzzle, end);
+    tracer(muzzle, end);
   }
   if (hitAny) showHit();
 }
@@ -277,10 +306,11 @@ function botFire(a, target) {
   a.nextFire = now + w.rof * DIFF[cfg.diff].rof; a.mag--; sndShot(a.weapon, true);
   for (let p = 0; p < w.pellets; p++) if (Math.random() < DIFF[cfg.diff].acc) hurt(target, w.dmg * DIFF[cfg.diff].dmg / (w.pellets > 1 ? 2 : 1), a);
 }
-function hurt(a, dmg, by) {
+function hurt(a, dmg, by, head) {
   if (!a.alive) return;
-  if (a.armor > 0) { const ab = Math.min(a.armor, dmg * .5); a.armor -= ab; dmg -= ab; if (a.isPlayer) me.armor = a.armor; }
-  a.hp -= dmg; a._flash = 1;
+  // kevlar protege el cuerpo (mitad) pero poco la cabeza (como en CS → headshots letales con armadura)
+  if (a.armor > 0) { const absorbFrac = head ? 0.18 : 0.5; const ab = Math.min(a.armor, dmg * absorbFrac); a.armor -= ab; dmg -= ab; if (a.isPlayer) me.armor = a.armor; }
+  a.hp -= dmg; a._flash = 1; a.tagT = 0.25;          // tagging: ralentiza brevemente al recibir daño
   if (a.isPlayer) { flashDmg(); updateHUD(); }
   if (a.hp <= 0) kill(a, by);
 }
@@ -354,7 +384,7 @@ function noise(dur, vol) {
     n.connect(f); f.connect(g); g.connect(A.destination); n.start();
   } catch (e) {}
 }
-function sndShot(w, far) { const v = far ? .18 : .5; if (w === "shotgun") { noise(.18, v); tone(120, .15, "sawtooth", v * .8, 60); } else if (w === "rifle") { noise(.08, v); tone(420, .06, "square", v * .5, 180); } else { noise(.07, v); tone(520, .07, "square", v * .5, 200); } }
+function sndShot(w, far) { const v = far ? .18 : .5; if (w === "sniper") { noise(.16, v); tone(220, .18, "sawtooth", v * .9, 70); } else if (w === "rifle") { noise(.07, v); tone(440, .06, "square", v * .5, 190); } else { noise(.06, v); tone(540, .07, "square", v * .5, 210); } }
 function sndKill() { tone(160, .25, "sawtooth", .4, 70); noise(.12, .25); }
 function sndReload() { tone(300, .05, "square", .35); setTimeout(() => tone(220, .07, "square", .35), 180); setTimeout(() => tone(420, .05, "square", .35), 420); }
 function sndSwitch() { tone(500, .05, "sine", .35); }
@@ -370,7 +400,7 @@ function botStep(a, dt) {
   const sees = tgt && lineClear(a.x, a.z, tgt.x, tgt.z) && Math.hypot(tgt.x - a.x, tgt.z - a.z) < 36;
   if (sees) {
     a.seeT += dt; const want = Math.atan2(tgt.x - a.x, tgt.z - a.z); a.dir = angLerp(a.dir, want, 6 * dt);
-    const dist = Math.hypot(tgt.x - a.x, tgt.z - a.z), desired = a.weapon === "shotgun" ? 5 : 11, fwd2 = (dist > desired ? 1 : -.7) * 3.2 * dt;
+    const dist = Math.hypot(tgt.x - a.x, tgt.z - a.z), desired = a.weapon === "sniper" ? 18 : 11, fwd2 = (dist > desired ? 1 : -.7) * 3.2 * dt;
     botMove(a, a.x + Math.sin(a.dir) * fwd2, a.z + Math.cos(a.dir) * fwd2);
     const st = Math.sin(performance.now() / 500 + a.x) * 2.4 * dt;
     botMove(a, a.x + Math.sin(a.dir + 1.57) * st, a.z + Math.cos(a.dir + 1.57) * st);
@@ -422,6 +452,7 @@ function setupRound() {
   controls.getObject().position.set(player.x, 1.6, player.z);
   const yaw = Math.atan2(WORLD / 2 - player.x, WORLD / 2 - player.z); camera.rotation.set(0, yaw, 0); player.dir = yaw;
   recoil.pitch = recoil.yaw = recoil.ap = recoil.ay = 0; velY = 0; ads = false; adsT = 0;
+  player.vx = 0; player.vz = 0; player.sprayIdx = 0; player.lastShot = 0; player.tagT = 0;
   buildViewmodel(); feedClear(); updateHUD();
 }
 function newMatch() { me = { money: 800, nades: 0, weapon: "pistol", armor: 0 }; round = 1; score = { red: 0, blue: 0 }; setupRound(); enterBuy(); }
@@ -506,7 +537,7 @@ document.addEventListener("keydown", e => {
   if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) e.preventDefault();
   keys[k] = true;
   if (gstate !== "play") return;
-  if (k === "1") switchWeapon("pistol"); if (k === "2") switchWeapon("rifle"); if (k === "3") switchWeapon("shotgun");
+  if (k === "1") switchWeapon("pistol"); if (k === "2") switchWeapon("rifle"); if (k === "3") switchWeapon("sniper");
   if (k === "r") reload(player); if (k === "e") interact(); if (k === "g") throwGrenade();
   if (k === " " && onGround) { velY = 5.0; onGround = false; }
 });
@@ -549,15 +580,19 @@ function loop(t) {
     if (msgT > 0) msgT -= dt;
     if (bomb && bomb.planted && bomb.site._ring) bomb.site._ring.material.opacity = .4 + Math.sin(t / 120) * .3;
   }
-  // ADS lerp + fov
-  adsT += ((ads ? 1 : 0) - adsT) * Math.min(1, dt * 12);
+  // MIRA (scope) — exclusiva del sniper
+  const scoping = ads && player && player.weapon === "sniper";
+  adsT += ((scoping ? 1 : 0) - adsT) * Math.min(1, dt * 14);
   camera.fov = cfg.fov - (cfg.fov - ADS_FOV) * adsT;
   camera.updateProjectionMatrix();
-  adsVig.classList.toggle("on", adsT > .5 && player && player.weapon !== "shotgun");
-  // recoil: aplicar deltas y recuperar
+  adsVig.classList.toggle("on", adsT > .5);
+  // retroceso: aplica el patrón (deltas) y recupera SOLO tras dejar de disparar (el spray se mantiene)
   const dP = recoil.pitch - recoil.ap, dY = recoil.yaw - recoil.ay;
   camera.rotation.x += dP; camera.rotation.y += dY; recoil.ap = recoil.pitch; recoil.ay = recoil.yaw;
-  recoil.pitch *= Math.pow(.0025, dt); recoil.yaw *= Math.pow(.0025, dt);
+  if (player && performance.now() - (player.lastShot || 0) > 180) {
+    recoil.pitch *= Math.pow(.02, dt); recoil.yaw *= Math.pow(.02, dt);
+    if (Math.abs(recoil.pitch) < 0.0006 && Math.abs(recoil.yaw) < 0.0006) { recoil.pitch = recoil.yaw = 0; player.sprayIdx = 0; }
+  }
   // efectos
   fx.forEach(p => { if (p.m) { p.vy -= 8 * dt; p.m.position.x += p.vx * dt; p.m.position.y += p.vy * dt; p.m.position.z += p.vz * dt; } p.life -= dt; });
   fx = fx.filter(p => { if (p.life <= 0) { if (p.m) scene.remove(p.m); if (p.light) scene.remove(p.light); return false; } if (p.light) p.light.intensity = 8 * (p.life / .25); return true; });
@@ -576,10 +611,14 @@ function loop(t) {
   if (msgT > 0) { bannerEl.textContent = msg; bannerEl.style.opacity = 1; } else bannerEl.style.opacity = 0;
 }
 function updateCrosshair() {
-  let spread = 4;
-  if (gstate === "play") { if (isMoving()) spread += 6; if (!onGround) spread += 8; if (fireFlash > 0) spread += 9; }
-  spread -= adsT * 6;
-  crosshairEl.style.setProperty("--spread", Math.max(1, spread) + "px");
+  // refleja la imprecisión real: parado se cierra, en movimiento/aire/disparo se abre
+  let spread = 3;
+  if (gstate === "play" && player && player.alive) {
+    const w = WEAPONS[player.weapon];
+    spread += currentInacc(w) * 900;            // imprecisión → píxeles
+    if (fireFlash > 0) spread += 6;
+  }
+  crosshairEl.style.setProperty("--spread", Math.max(1.5, Math.min(40, spread)) + "px");
   crosshairEl.style.setProperty("--cc", cfg.cc);
   crosshairEl.style.opacity = adsT > .7 ? 0 : 1;
   if (fireFlash > 0) fireFlash -= 0.016;
@@ -589,26 +628,37 @@ function updatePlayer(dt) {
   if (!player.alive) return;
   const w = WEAPONS[player.weapon], obj = controls.getObject();
   player.dir = camera.rotation.y;
-  const run = (cfg.run && keys.shift && !ads) ? 1.7 : 1, adsSlow = ads ? .55 : 1;
-  const sp = 4.6 * run * adsSlow * dt;
-  let fx2 = 0, fz = 0;
-  if (keys.w || keys.arrowup) fz -= 1; if (keys.s || keys.arrowdown) fz += 1; if (keys.a) fx2 -= 1; if (keys.d) fx2 += 1;
-  const ml = Math.hypot(fx2, fz);
-  if (ml > 0) {
-    fx2 /= ml; fz /= ml; const yaw = obj.rotation.y;
-    const dx = fx2 * Math.cos(yaw) - fz * Math.sin(yaw), dz = fx2 * Math.sin(yaw) + fz * Math.cos(yaw);
-    const rx = playerCollide(obj.position.x + dx * sp, obj.position.z); if (rx) obj.position.x = rx.x;
-    const rz = playerCollide(obj.position.x, obj.position.z + dz * sp); if (rz) obj.position.z = rz.z;
-    player.walk += sp * 3;
-    // pasos
-    if (onGround) { stepTimer -= dt; if (stepTimer <= 0) { sndStep(); stepTimer = run > 1 ? .28 : .42; } }
-  }
-  velY -= 14 * dt; obj.position.y += velY * dt;
+  if (player.tagT > 0) player.tagT -= dt;
+  // wishdir (dirección deseada en mundo, relativa a la cámara)
+  let fx = 0, fz = 0;
+  if (keys.w || keys.arrowup) fz -= 1; if (keys.s || keys.arrowdown) fz += 1; if (keys.a) fx -= 1; if (keys.d) fx += 1;
+  const yaw = obj.rotation.y; const ml = Math.hypot(fx, fz);
+  let wx = 0, wz = 0; if (ml > 0) { fx /= ml; fz /= ml; wx = fx * Math.cos(yaw) - fz * Math.sin(yaw); wz = fx * Math.sin(yaw) + fz * Math.cos(yaw); }
+  // velocidad máxima (constante, sin mush) modulada por arma / andar / tag / mira
+  let maxS = 4.9 * w.moveSpd;
+  const walking = keys.shift;
+  if (walking) maxS *= 0.52;
+  if (player.tagT > 0) maxS *= 0.55;
+  if (ads && w.scope) maxS *= 0.45;
+  // counter-strafe: paso hacia la velocidad objetivo con aceleración alta, fricción aún mayor
+  const tx = wx * maxS, tz = wz * maxS;
+  const ax = tx - (player.vx || 0), az = tz - (player.vz || 0); const am = Math.hypot(ax, az);
+  const onG = onGround; const ACCEL = onG ? 75 : 16, FRIC = onG ? 90 : 2;
+  const rate = (ml > 0 ? ACCEL : FRIC) * dt;
+  if (am > 0) { const k = Math.min(1, rate / am); player.vx = (player.vx || 0) + ax * k; player.vz = (player.vz || 0) + az * k; }
+  // mover con colisión por ejes
+  const nx = obj.position.x + player.vx * dt, nz = obj.position.z + player.vz * dt;
+  const rx = playerCollide(nx, obj.position.z); if (rx) obj.position.x = rx.x; else player.vx = 0;
+  const rz = playerCollide(obj.position.x, nz); if (rz) obj.position.z = rz.z; else player.vz = 0;
+  const spd = Math.hypot(player.vx, player.vz); player.walk += spd * dt * 2.2;
+  // pasos: solo corriendo (andar con shift es silencioso, como en CS)
+  if (onG && spd > 1.6 && !walking) { stepTimer -= dt; if (stepTimer <= 0) { sndStep(); stepTimer = 0.34 / Math.max(.7, spd / 4.9); } }
+  // salto / gravedad
+  velY -= 16 * dt; obj.position.y += velY * dt;
   if (obj.position.y <= 1.6) { obj.position.y = 1.6; velY = 0; onGround = true; }
   player.x = obj.position.x; player.z = obj.position.z;
   if (keys._m && w.auto) playerFire();
-  // sensibilidad ADS
-  controls.pointerSpeed = cfg.sens * (ads ? .6 : 1);
+  controls.pointerSpeed = cfg.sens * (ads && w.scope ? 0.5 : 1);
 }
 
 // ---------------- settings ----------------
@@ -619,14 +669,16 @@ NovaSettings.mount({
       { type: "range", key: "sens", label: "Sensibilidad ratón", default: 1, min: .3, max: 2.5, step: .1, fmt: v => (+v).toFixed(1) + "×" },
       { type: "range", key: "fov", label: "Campo de visión", default: 75, min: 60, max: 100, step: 1, fmt: v => Math.round(v) + "°" },
       { type: "select", key: "cc", label: "Color de mira", default: "#ffffff", options: [{ value: "#ffffff", label: "Blanco" }, { value: "#3bff9e", label: "Verde" }, { value: "#ff3b6e", label: "Rojo" }, { value: "#ffd23b", label: "Ámbar" }] },
-      { type: "toggle", key: "run", label: "Correr con Shift", default: true },
-      { type: "keys", label: "Mover · Saltar", value: "WASD · Espacio" },
-      { type: "keys", label: "Disparar · Apuntar", value: "Clic · Clic-der" },
-      { type: "keys", label: "Armas · Recargar", value: "1·2·3 · R" },
+      { type: "keys", label: "Mover · Andar (sigiloso)", value: "WASD · Shift" },
+      { type: "keys", label: "Disparar · Saltar", value: "Clic · Espacio" },
+      { type: "keys", label: "Armas (Pist/Rifle/Sniper)", value: "1 · 2 · 3" },
+      { type: "keys", label: "Mira sniper · Recargar", value: "Clic-der · R" },
       { type: "keys", label: "Granada · C4", value: "G · E" },
+      { type: "info", label: "Precisión", value: "Párate para disparar fino" },
+      { type: "info", label: "Spray", value: "Tira ↓ contra el patrón" },
     ]
   }],
-  onChange: (k, v) => { cfg[k] = (k === "diff" || k === "run" || k === "cc") ? v : parseFloat(v); applyCfg(); }
+  onChange: (k, v) => { cfg[k] = (k === "diff" || k === "cc") ? v : parseFloat(v); applyCfg(); }
 });
 const saved = NovaSettings.loadCfg("fps");
 Object.assign(cfg, { sens: +saved.sens || 1, diff: saved.diff || "normal", fov: +saved.fov || 75, cc: saved.cc || "#ffffff", run: saved.run !== undefined ? saved.run : true });
