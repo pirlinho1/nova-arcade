@@ -3,84 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strike 5v5 — NOVA ARCADE</title>
+<title>Strike Force — NOVA ARCADE</title>
 <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('nova-theme')||'dark')}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../css/theme.css">
 <link rel="stylesheet" href="../../css/game.css">
 <style>
-  .fps-stage { position: relative; }
-  #cv { cursor: crosshair; background:#0a0c12; }
-  /* mira */
+  .fps-stage { position: relative; width: 100%; max-width: 860px; }
+  #cv { width: 100%; height: auto; display:block; background:#11151d; image-rendering:auto; }
   .crosshair { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:6; }
-  .crosshair i { position:absolute; background:rgba(255,255,255,.85); box-shadow:0 0 4px rgba(0,0,0,.8); }
-  .crosshair .h { width:18px; height:2px; left:-9px; top:-1px; }
-  .crosshair .v { width:2px; height:18px; left:-1px; top:-9px; }
-  .crosshair .d { width:4px; height:4px; left:-2px; top:-2px; border-radius:50%; background:var(--accent); }
-  /* hud inferior */
+  .crosshair i { position:absolute; background:rgba(255,255,255,.9); box-shadow:0 0 3px rgba(0,0,0,.9); }
+  .crosshair .h { width:16px; height:2px; left:-8px; top:-1px; } .crosshair .v { width:2px; height:16px; left:-1px; top:-8px; }
+  .crosshair .d { width:3px; height:3px; left:-1.5px; top:-1.5px; border-radius:50%; background:var(--accent); }
   .fps-hud { position:absolute; left:0; right:0; bottom:0; display:flex; justify-content:space-between; align-items:flex-end;
              padding:12px 16px; pointer-events:none; z-index:6; font-family:var(--font-display); }
-  .fps-hud .blk { background:color-mix(in srgb,var(--bg) 55%, transparent); border:1px solid var(--border);
-                  border-radius:10px; padding:6px 12px; backdrop-filter:blur(2px); }
-  .fps-hud .hp b { color:#ff5b6e; font-size:28px; } .fps-hud .ar b { color:#5bc0ff; font-size:20px; }
+  .fps-hud .blk { background:color-mix(in srgb,var(--bg) 55%, transparent); border:1px solid var(--border); border-radius:10px; padding:6px 12px; backdrop-filter:blur(2px); }
+  .fps-hud .hp b { color:#ff5b6e; font-size:28px; } .fps-hud .ar b { color:#5bc0ff; font-size:18px; }
   .fps-hud .ammo b { color:var(--accent); font-size:28px; } .fps-hud small { color:var(--text-dim); font-size:10px; letter-spacing:1px; }
   .fps-hud .wname { color:var(--text); font-size:13px; text-transform:uppercase; letter-spacing:1px; }
-  /* marcador superior */
-  .score { position:absolute; left:50%; top:8px; transform:translateX(-50%); display:flex; gap:10px; align-items:center; z-index:6;
-           pointer-events:none; font-family:var(--font-display); }
+  .score { position:absolute; left:50%; top:8px; transform:translateX(-50%); display:flex; gap:10px; align-items:center; z-index:6; pointer-events:none; font-family:var(--font-display); }
   .score .t { padding:3px 12px; border-radius:8px; font-size:20px; }
   .score .red { background:rgba(255,70,90,.18); border:1px solid #ff465a; color:#ff8b97; }
   .score .blue{ background:rgba(70,140,255,.18); border:1px solid #4f8cff; color:#9cc0ff; }
   .score .round { font-size:11px; color:var(--text-dim); }
-  /* minimapa */
-  #mini { position:absolute; right:10px; top:34px; border:1px solid var(--border); border-radius:8px; z-index:6;
-          background:color-mix(in srgb,var(--bg) 70%, transparent); }
-  /* aviso de daño */
-  .dmg { position:absolute; inset:0; background:radial-gradient(circle, transparent 55%, rgba(255,0,0,.45)); opacity:0;
-         pointer-events:none; z-index:5; transition:opacity .08s; }
+  #mini { position:absolute; right:10px; top:34px; border:1px solid var(--border); border-radius:8px; z-index:6; background:color-mix(in srgb,var(--bg) 65%, transparent); }
+  .dmg { position:absolute; inset:0; background:radial-gradient(circle, transparent 50%, rgba(255,0,0,.5)); opacity:0; pointer-events:none; z-index:5; transition:opacity .08s; }
   .dmg.on { opacity:1; }
-  /* killfeed */
   .feed { position:absolute; right:10px; bottom:96px; z-index:6; pointer-events:none; display:flex; flex-direction:column; gap:4px; align-items:flex-end; }
   .feed div { font-size:12px; background:color-mix(in srgb,var(--bg) 55%, transparent); padding:2px 8px; border-radius:6px; }
-  .lock-hint { position:absolute; left:50%; bottom:64px; transform:translateX(-50%); z-index:6; pointer-events:none;
-               font-size:12px; color:var(--text-dim); background:color-mix(in srgb,var(--bg) 55%, transparent); padding:4px 10px; border-radius:8px; }
+  .lock-hint { position:absolute; left:50%; bottom:60px; transform:translateX(-50%); z-index:6; pointer-events:none; font-size:12px; color:var(--text-dim); background:color-mix(in srgb,var(--bg) 55%, transparent); padding:4px 10px; border-radius:8px; }
   .lock-hint.hide { display:none; }
+  .hitmark { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scale(1); color:#fff; font-weight:700; font-size:22px; z-index:7; opacity:0; pointer-events:none; text-shadow:0 0 4px #000; }
+  .hitmark.on { animation:hm .25s ease-out; }
+  @keyframes hm { 0%{opacity:1;transform:translate(-50%,-50%) scale(.6)} 100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)} }
 </style>
 </head>
 <body>
   <div class="arcade-topbar">
     <a class="btn" href="../../index.html">← Volver</a>
-    <span class="brand">STRIKE 5v5</span>
+    <span class="brand">STRIKE FORCE</span>
     <span class="spacer"></span>
     <div id="nova-gear-host"></div>
   </div>
   <main class="game-main">
     <div class="stage fps-stage">
-      <canvas id="cv" width="640" height="400"></canvas>
+      <canvas id="cv" width="860" height="500"></canvas>
       <div class="score"><span class="t red" id="sRed">0</span><span class="round" id="sRound">Ronda 1</span><span class="t blue" id="sBlue">0</span></div>
       <canvas id="mini" width="120" height="120"></canvas>
       <div class="crosshair"><i class="h"></i><i class="v"></i><i class="d"></i></div>
+      <div class="hitmark" id="hitmark">✕</div>
       <div class="dmg" id="dmg"></div>
       <div class="feed" id="feed"></div>
       <div class="lock-hint" id="lockHint">Clic para capturar el ratón · ESC para soltar</div>
       <div class="fps-hud">
-        <div class="blk hp"><b id="hp">100</b> <small>VIDA</small><br><span class="ar">+<b id="armor">0</b> <small>ARMADURA</small></span></div>
+        <div class="blk hp"><b id="hp">100</b> <small>VIDA</small> &nbsp;<span class="ar">+<b id="armor">0</b></span> <small>ARMADURA</small></div>
         <div class="blk ammo"><span class="wname" id="wname">PISTOLA</span><br><b id="ammo">12</b><small>/<span id="reserve">∞</span></small></div>
       </div>
       <div class="overlay show" id="ov"><div class="box">
-        <h2 id="ov-title">STRIKE 5v5</h2>
-        <p id="ov-msg">WASD moverte · ratón apuntar · clic disparar · 1/2/3 armas · R recargar · E plantar/desactivar C4 · Shift correr.<br>Equipo Rojo (tú + 4 IA) vs Equipo Azul. Elimina al equipo rival o planta la bomba. Gana 3 rondas.</p>
+        <h2 id="ov-title">STRIKE FORCE</h2>
+        <p id="ov-msg">WASD moverte · ratón apuntar · clic disparar · 1/2/3 armas · R recargar · E plantar/desactivar C4 · Shift correr · Espacio saltar.<br>Rojo (tú + 4 IA) vs Azul. Elimina al rival o detona la bomba. Gana 3 rondas.</p>
         <button class="btn btn-accent" id="ov-btn">▶ Jugar</button>
       </div></div>
     </div>
-    <div class="controls-row">
-      <button class="btn" id="restart">↻ Reiniciar</button>
-    </div>
+    <div class="controls-row"><button class="btn" id="restart">↻ Reiniciar</button></div>
   </main>
+  <script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+  } }
+  </script>
   <script src="../../js/theme.js"></script>
   <script src="../../js/audio.js"></script>
   <script src="../../js/settings.js"></script>
-  <script src="game.js"></script>
+  <script type="module" src="game.js"></script>
 </body>
 </html>

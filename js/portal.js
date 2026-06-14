@@ -10,7 +10,7 @@ const CATALOG = [
   { id: "solitaire",title:"Solitario",    cat: "Cartas",     emoji: "🃏", color: "#3bff9e", ready: true,  url: "games/solitaire/", desc: "Klondike. Ordena los palos." },
   { id: "uno",     title: "UNO",          cat: "Cartas",     emoji: "🂡", color: "#ff3b3b", ready: true,  url: "games/uno/",    desc: "Tú vs 3 IA. ¡Quédate sin cartas!" },
   { id: "parchis", title: "Parchís",      cat: "Mesa",       emoji: "🎲", color: "#ffd23b", ready: true,  url: "games/parchis/", desc: "Ludo vs IA. Lleva tus 4 fichas." },
-  { id: "fps",     title: "Strike 5v5",   cat: "Acción",     emoji: "🔫", color: "#ff2e88", ready: true,  url: "games/fps/",    desc: "FPS táctico 3D: 5v5, C4, arsenal e IA." },
+  { id: "fps",     title: "Strike Force",  cat: "Acción",     emoji: "🔫", color: "#ff2e88", ready: true,  url: "games/fps/",    desc: "FPS 3D (Three.js): 5v5, C4, arsenal e IA." },
   { id: "kart",    title: "Turbo Cups",   cat: "Carreras",   emoji: "🏎️", color: "#ff7b2e", ready: false, desc: "Copas, pistas, powerups, tuning." },
   { id: "haxball", title: "HaxBall FC",   cat: "Deportes",   emoji: "⚽", color: "#3bff9e", ready: true,  url: "games/haxball/", desc: "Fútbol físico vs IA." },
   { id: "slots",   title: "Lucky Spin",   cat: "Casino",     emoji: "🎰", color: "#ffd14d", ready: true,  url: "games/slots/",   desc: "Tragaperras de fichas. Jackpot 7️⃣." },
