@@ -149,7 +149,7 @@ let agents = [], player, enemyMeshes = [];
 let bomb, round, score, gstate = "menu", lastTime, keys = {}, msg = "", msgT = 0;
 let cfg = { sens: 1, diff: "normal", run: true, fov: 75, cc: "#ffffff" };
 let me = { money: 800, nades: 0, weapon: "pistol", armor: 0 };
-let velY = 0, onGround = true, ads = false, adsT = 0;
+let velY = 0, onGround = true, ads = false, adsT = 0, crouch = false;
 const recoil = { pitch: 0, yaw: 0, ap: 0, ay: 0 };
 let fx = [], tracers = [], grenades = [];
 let stepTimer = 0, fireFlash = 0;
@@ -252,6 +252,7 @@ function currentInacc(w) {
   let inacc = w.accStand + w.accMove * (moveSpd / 4.6);     // 4.6 ≈ velocidad de carrera
   if (!onGround) inacc += w.accAir;
   if (w.scope && !ads) inacc += w.hipAcc;                   // sniper sin mira = muy impreciso
+  if (crouch && onGround) inacc *= 0.62;                     // agachado = más preciso
   return inacc;
 }
 function playerFire() {
@@ -452,7 +453,7 @@ function setupRound() {
   controls.getObject().position.set(player.x, 1.6, player.z);
   const yaw = Math.atan2(WORLD / 2 - player.x, WORLD / 2 - player.z); camera.rotation.set(0, yaw, 0); player.dir = yaw;
   recoil.pitch = recoil.yaw = recoil.ap = recoil.ay = 0; velY = 0; ads = false; adsT = 0;
-  player.vx = 0; player.vz = 0; player.sprayIdx = 0; player.lastShot = 0; player.tagT = 0;
+  player.vx = 0; player.vz = 0; player.sprayIdx = 0; player.lastShot = 0; player.tagT = 0; crouch = false;
   buildViewmodel(); feedClear(); updateHUD();
 }
 function newMatch() { me = { money: 800, nades: 0, weapon: "pistol", armor: 0 }; round = 1; score = { red: 0, blue: 0 }; setupRound(); enterBuy(); }
@@ -534,14 +535,15 @@ function drawMini() {
 // ---------------- input ----------------
 document.addEventListener("keydown", e => {
   const k = e.key.toLowerCase();
-  if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) e.preventDefault();
+  if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright", "control"].includes(k)) e.preventDefault();
   keys[k] = true;
+  if (k === "control") crouch = true;
   if (gstate !== "play") return;
   if (k === "1") switchWeapon("pistol"); if (k === "2") switchWeapon("rifle"); if (k === "3") switchWeapon("sniper");
   if (k === "r") reload(player); if (k === "e") interact(); if (k === "g") throwGrenade();
   if (k === " " && onGround) { velY = 5.0; onGround = false; }
 });
-document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+document.addEventListener("keyup", e => { const k = e.key.toLowerCase(); keys[k] = false; if (k === "control") crouch = false; });
 function interact() { if (!player.alive || bomb.planted) return; for (const s of bombSites) if (Math.hypot(s.x - player.x, s.z - player.z) < .9) { plantBomb(player, s); return; } }
 cv.addEventListener("click", () => { actx(); if (gstate === "play" && !controls.isLocked) controls.lock(); });
 cv.addEventListener("contextmenu", e => e.preventDefault());
@@ -629,15 +631,17 @@ function updatePlayer(dt) {
   const w = WEAPONS[player.weapon], obj = controls.getObject();
   player.dir = camera.rotation.y;
   if (player.tagT > 0) player.tagT -= dt;
-  // wishdir (dirección deseada en mundo, relativa a la cámara)
-  let fx = 0, fz = 0;
-  if (keys.w || keys.arrowup) fz -= 1; if (keys.s || keys.arrowdown) fz += 1; if (keys.a) fx -= 1; if (keys.d) fx += 1;
-  const yaw = obj.rotation.y; const ml = Math.hypot(fx, fz);
-  let wx = 0, wz = 0; if (ml > 0) { fx /= ml; fz /= ml; wx = fx * Math.cos(yaw) - fz * Math.sin(yaw); wz = fx * Math.sin(yaw) + fz * Math.cos(yaw); }
-  // velocidad máxima (constante, sin mush) modulada por arma / andar / tag / mira
+  // wishdir CORRECTO: W=adelante (hacia donde mira la cámara), S=atrás, A/D=strafe
+  let f = 0, r = 0;
+  if (keys.w || keys.arrowup) f += 1; if (keys.s || keys.arrowdown) f -= 1; if (keys.d || keys.arrowright) r += 1; if (keys.a || keys.arrowleft) r -= 1;
+  const yaw = obj.rotation.y, sinY = Math.sin(yaw), cosY = Math.cos(yaw);
+  // forward = (-sinY,-cosY), right = (cosY,-sinY)
+  let wx = (-sinY) * f + (cosY) * r, wz = (-cosY) * f + (-sinY) * r;
+  const ml = Math.hypot(wx, wz); if (ml > 1) { wx /= ml; wz /= ml; }
+  // velocidad máxima (constante, sin mush) modulada por arma / andar / agachado / tag / mira
   let maxS = 4.9 * w.moveSpd;
-  const walking = keys.shift;
-  if (walking) maxS *= 0.52;
+  if (keys.shift) maxS *= 0.52;          // andar (sigilo)
+  if (crouch && onGround) maxS *= 0.5;   // agachado
   if (player.tagT > 0) maxS *= 0.55;
   if (ads && w.scope) maxS *= 0.45;
   // counter-strafe: paso hacia la velocidad objetivo con aceleración alta, fricción aún mayor
@@ -652,10 +656,11 @@ function updatePlayer(dt) {
   const rz = playerCollide(obj.position.x, nz); if (rz) obj.position.z = rz.z; else player.vz = 0;
   const spd = Math.hypot(player.vx, player.vz); player.walk += spd * dt * 2.2;
   // pasos: solo corriendo (andar con shift es silencioso, como en CS)
-  if (onG && spd > 1.6 && !walking) { stepTimer -= dt; if (stepTimer <= 0) { sndStep(); stepTimer = 0.34 / Math.max(.7, spd / 4.9); } }
-  // salto / gravedad
+  if (onG && spd > 1.6 && !keys.shift && !crouch) { stepTimer -= dt; if (stepTimer <= 0) { sndStep(); stepTimer = 0.34 / Math.max(.7, spd / 4.9); } }
+  // salto / gravedad / agachado (la altura del suelo baja al agacharse)
   velY -= 16 * dt; obj.position.y += velY * dt;
-  if (obj.position.y <= 1.6) { obj.position.y = 1.6; velY = 0; onGround = true; }
+  const gY = crouch ? 1.05 : 1.6;
+  if (obj.position.y <= gY) { obj.position.y = gY; velY = 0; onGround = true; }
   player.x = obj.position.x; player.z = obj.position.z;
   if (keys._m && w.auto) playerFire();
   controls.pointerSpeed = cfg.sens * (ads && w.scope ? 0.5 : 1);
