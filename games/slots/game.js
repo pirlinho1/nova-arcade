@@ -23,6 +23,7 @@
   // geometría: rodillos a la izquierda, tabla de pagos a la derecha
   const RW = 104, RH = 96, GAP = 10, X0 = 14, Y0 = 28;
   const PAYX = X0 + REELS * RW + (REELS - 1) * GAP + 14; // x panel pagos
+  const MW = 554;                 // ancho del cuerpo de la máquina (resto = columna de la palanca)
   // 5 líneas de pago (cada una: [row en reel0, reel1, reel2]) + color
   const LINES = [
     { rows: [1, 1, 1], c: "#3bff9e" },  // centro
@@ -115,9 +116,10 @@
     coins = coins.filter(c => c.life > 0 && c.y < H + 30);
     if (flash > 0) flash--;
     if (bigT > 0) bigT--;
+    stepLever();
     draw();
     // seguir animando si hay algo vivo
-    const alive = anySpin || coins.length || winShown < winTarget || flash > 0 || (wins.length && state === "play") || bigT > 0;
+    const alive = anySpin || coins.length || winShown < winTarget || flash > 0 || (wins.length && state === "play") || bigT > 0 || leverActive();
     if (alive) raf = requestAnimationFrame(loop); else { raf = null; draw(); }
   }
 
@@ -132,9 +134,11 @@
         total += amount; if (sym === JACK) jackpot = true;
         wins.push({ li, sym, amount, cells: ln.rows.map((row, ri) => ({ ri, row })), c: ln.c });
       } else {
-        // 2 cerezas en una línea pagan poco
-        const ch = idxs.filter(s => s === 0).length;
-        if (ch >= 2 && li === 0) { const amount = Math.ceil(1.5 * BETS[betIdx]); total += amount; wins.push({ li, sym: 0, amount, cells: ln.rows.map((row, ri) => ({ ri, row })).filter((_, ri) => idxs[ri] === 0), c: ln.c }); }
+        // cerezas CONSECUTIVAS desde la izquierda (solo línea central) — no cuenta cerezas separadas
+        if (li === 0) {
+          let cc = 0; for (let r = 0; r < REELS; r++) { if (idxs[r] === 0) cc++; else break; }
+          if (cc >= 2) { const amount = Math.ceil(1.5 * BETS[betIdx]); total += amount; wins.push({ li, sym: 0, partial: true, amount, cells: ln.rows.slice(0, cc).map((row, ri) => ({ ri, row })), c: ln.c }); }
+        }
         if (idxs.filter(s => s === JACK).length === 2) twoJack = true;
       }
     });
@@ -160,13 +164,43 @@
 
   function flashMsg(t) { ovTitle.textContent = "LUCKY SPIN"; ovTitle.className = ""; ovMsg.textContent = t; ovBtn.textContent = "▶ Seguir"; ov.classList.add("show"); state = "idle"; }
 
+  // ---------- palanca (lever) con física de resorte ----------
+  const lever = { p: 0, vel: 0, grabbed: false, armed: false };
+  const RAILX = MW + 45, KTOP = 44, REST_OFF = 40, KSPAN = 214;
+  function knobXY() { return { x: RAILX, y: KTOP + REST_OFF + lever.p * KSPAN }; }
+  function stepLever() {
+    if (!lever.grabbed) { lever.vel += (0 - lever.p) * 0.32; lever.vel *= 0.58; lever.p += lever.vel; if (Math.abs(lever.p) < 0.001 && Math.abs(lever.vel) < 0.001) { lever.p = 0; lever.vel = 0; } }
+    lever.p = Math.max(0, Math.min(1.08, lever.p));
+  }
+  function leverActive() { return lever.grabbed || Math.abs(lever.vel) > 0.0008 || lever.p > 0.002; }
+  function drawLever() {
+    const k = knobXY(), tilt = Math.sin(lever.p * Math.PI) * 6;
+    ctx.fillStyle = "#2a2f3a"; ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 2;
+    roundRect(RAILX - 16, KTOP - 22, 32, 26, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#161a22"; ctx.beginPath(); ctx.arc(RAILX, KTOP - 9, 6, 0, 7); ctx.fill();
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#9aa0ad"; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(RAILX, KTOP - 6); ctx.lineTo(k.x + tilt, k.y); ctx.stroke();
+    ctx.strokeStyle = "#cfd4dd"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(RAILX, KTOP - 6); ctx.lineTo(k.x + tilt, k.y); ctx.stroke();
+    const g = ctx.createRadialGradient(k.x + tilt - 5, k.y - 6, 2, k.x + tilt, k.y, 16);
+    g.addColorStop(0, "#ff8a8a"); g.addColorStop(.5, "#e0182f"); g.addColorStop(1, "#8a0f1c");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(k.x + tilt, k.y, 15, 0, 7); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.beginPath(); ctx.arc(k.x + tilt - 5, k.y - 5, 4, 0, 7); ctx.fill();
+    if (!lever.grabbed && lever.p < 0.02 && !spinning) { ctx.fillStyle = "#8893a5"; ctx.font = "10px 'Chakra Petch'"; ctx.textAlign = "center"; ctx.fillText("TIRA ▼", RAILX, KTOP + REST_OFF + KSPAN + 26); }
+  }
+  function cvPos(e) { const r = cv.getBoundingClientRect(); const cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left, cy = (e.touches ? e.touches[0].clientY : e.clientY) - r.top; return { x: cx / r.width * W, y: cy / r.height * H }; }
+  function leverDown(e) { if (state !== "play") return; const p = cvPos(e); const k = knobXY(); if (Math.hypot(p.x - k.x, p.y - k.y) < 40 || (p.x > MW + 6 && Math.abs(p.x - RAILX) < 30)) { lever.grabbed = true; lever.armed = false; ensureLoop(); if (e.cancelable) e.preventDefault(); } }
+  function leverMove(e) { if (!lever.grabbed) return; const p = cvPos(e); lever.p = Math.max(0, Math.min(1.06, (p.y - KTOP - REST_OFF) / KSPAN)); if (lever.p > 0.72) lever.armed = true; if (e.cancelable) e.preventDefault(); }
+  function leverUp() { if (!lever.grabbed) return; lever.grabbed = false; lever.vel = -0.06; tone(180, .06, "square", .4); if (lever.armed) { lever.armed = false; spin(); } ensureLoop(); }
+  cv.addEventListener("mousedown", leverDown); window.addEventListener("mousemove", leverMove); window.addEventListener("mouseup", leverUp);
+  cv.addEventListener("touchstart", leverDown, { passive: false }); window.addEventListener("touchmove", leverMove, { passive: false }); window.addEventListener("touchend", leverUp);
+
   // ---------- dibujo ----------
   function cellXY(ri, row) { return { x: X0 + ri * (RW + GAP), y: Y0 + 8 + row * RH }; }
 
   function draw() {
     ctx.fillStyle = css("--bg-2"); ctx.fillRect(0, 0, W, H);
     // marco máquina con doble borde neón
-    ctx.strokeStyle = css("--accent"); ctx.lineWidth = 3; roundRect(6, 6, W - 12, H - 12, 14); ctx.stroke();
+    ctx.strokeStyle = css("--accent"); ctx.lineWidth = 3; roundRect(6, 6, MW - 12, H - 12, 14); ctx.stroke();
 
     // rodillos
     for (let i = 0; i < REELS; i++) {
@@ -208,6 +242,7 @@
 
     drawPaytable();
     drawCoins();
+    drawLever();
 
     if (flash > 0) { ctx.fillStyle = css("--accent-3"); ctx.globalAlpha = flash / 90; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
 
@@ -221,7 +256,7 @@
   }
 
   function drawPaytable() {
-    const x = PAYX, y = Y0, w = W - PAYX - 14;
+    const x = PAYX, y = Y0, w = MW - PAYX - 12;
     ctx.fillStyle = css("--surface-solid"); ctx.strokeStyle = css("--border"); ctx.lineWidth = 2;
     roundRect(x, y, w, RH * ROWS + 12, 12); ctx.fill(); ctx.stroke();
     ctx.fillStyle = css("--accent"); ctx.font = "700 13px 'Chakra Petch',sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
@@ -229,7 +264,7 @@
     const rowH = (RH * ROWS + 12 - 34) / SYM.length;
     SYM.forEach((s, i) => {
       const ry = y + 30 + i * rowH;
-      const isWin = wins.some(win => win.sym === i);
+      const isWin = wins.some(win => win.sym === i && !win.partial);
       if (isWin) { ctx.fillStyle = s.c; ctx.globalAlpha = 0.18 + Math.sin(pulse) * 0.12; roundRect(x + 4, ry + 2, w - 8, rowH - 3, 7); ctx.fill(); ctx.globalAlpha = 1; }
       ctx.font = "26px serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
       ctx.fillText(s.e, x + 12, ry + rowH / 2 + 1);
@@ -253,7 +288,6 @@
   function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
 
   // ---------- controles ----------
-  document.getElementById("spin").onclick = () => { if (state === "idle") { start(); return; } spin(); };
   document.getElementById("betup").onclick = () => { if (!spinning) { betIdx = Math.min(BETS.length - 1, betIdx + 1); updateHUD(); tone(660, .05, "sine", .4); } };
   document.getElementById("betdown").onclick = () => { if (!spinning) { betIdx = Math.max(0, betIdx - 1); updateHUD(); tone(440, .05, "sine", .4); } };
   document.getElementById("reset").onclick = () => { credits = 100; lastWin = 0; wins = []; save(); updateHUD(); draw(); tone(523, .1, "triangle", .5); };
