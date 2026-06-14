@@ -11,7 +11,7 @@ const CATALOG = [
   { id: "uno",     title: "Color Rush",   cat: "Cartas",     emoji: "🂡", color: "#ff3b51", ready: true,  url: "games/uno/",    desc: "Cartas de descarte vs IA. ¡Quédate sin cartas!" },
   { id: "parchis", title: "Parchís",      cat: "Mesa",       emoji: "🎲", color: "#ffd23b", ready: true,  url: "games/parchis/", desc: "Ludo vs IA. Lleva tus 4 fichas." },
   { id: "fps",     title: "Strike Force",  cat: "Acción",     emoji: "🔫", color: "#ff2e88", ready: true,  url: "games/fps/",    desc: "FPS 3D (Three.js): 5v5, C4, arsenal e IA." },
-  { id: "kart",    title: "Turbo Cups",   cat: "Carreras",   emoji: "🏎️", color: "#ff7b2e", ready: true,  url: "games/kart/",   desc: "Carreras top-down: drift y rivales IA." },
+  { id: "kart",    title: "Turbo Cups",   cat: "Carreras",   emoji: "🏎️", color: "#ff7b2e", ready: true,  url: "games/kart/",   desc: "Kart 3D: drift, mini-turbo, ítems y rivales IA." },
   { id: "haxball", title: "HaxBall FC",   cat: "Deportes",   emoji: "⚽", color: "#3bff9e", ready: true,  url: "games/haxball/", desc: "Fútbol físico vs IA." },
   { id: "slots",   title: "Lucky Spin",   cat: "Casino",     emoji: "🎰", color: "#ffd14d", ready: true,  url: "games/slots/",   desc: "Tragaperras de fichas. Jackpot 7️⃣." },
   { id: "cards",   title: "Video Póker",  cat: "Cartas",     emoji: "🂡", color: "#22d3ee", ready: true,  url: "games/cards/",  desc: "Jacks or Better. Mantén y gana." },
