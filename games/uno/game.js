@@ -54,7 +54,8 @@
   }
 
   function turnLoop() {
-    if (state !== "play" || anims.length || dealing) return;
+    if (state !== "play") return;
+    if (anims.length || dealing) { setTimeout(turnLoop, 140); return; }   // reintenta si algo sigue animando
     if (turn === 0) { msg("Tu turno — juega una carta válida (resaltada) o roba."); busy = false; return; }
     busy = true; msg(`Pensando: IA ${turn}…`);
     setTimeout(aiTurn, PACE[cfg.speed]);
@@ -91,15 +92,16 @@
     else if (card.v === "rev") fx.push({ type: "rev", x: dCenter.x, y: dCenter.y, t: 0, dur: .7 });
     else burst(dCenter.x, dCenter.y, COLORS[curColor] || "#fff", 10, 160);
 
-    let skip = false;
+    let skip = false, drawT = -1, drawCnt = 0;
     if (card.v === "rev") { dir *= -1; if (np === 2) skip = true; }
     if (card.v === "skip") skip = true;
-    if (card.v === "+2") { const t = next(turn); animateDraw(t, 2); skip = true; }
-    if (card.v === "+4") { const t = next(turn); animateDraw(t, 4); skip = true; }
+    if (card.v === "+2") { drawT = next(turn); drawCnt = 2; skip = true; }
+    if (card.v === "+4") { drawT = next(turn); drawCnt = 4; skip = true; }
     if (hands[p].length === 1) { unoCall = { p, t: 130 }; rushCall(p); }
     if (hands[p].length === 0) return win(p);
-    turn = next(turn, skip ? 2 : 1);
-    busy = false; setTimeout(turnLoop, 300);
+    // avanzar el turno SOLO cuando termine el robo penalizado (evita carrera con la animación)
+    const advance = () => { turn = next(turn, skip ? 2 : 1); busy = false; setTimeout(turnLoop, 300); };
+    if (drawCnt > 0) animateDraw(drawT, drawCnt, advance); else advance();
   }
   function colorWheelFx() { fx.push({ type: "wheel", x: dCenter.x, y: dCenter.y, t: 0, dur: .8, target: curColor }); }
   function rushCall(p) { tone(700, .12, "square", .5, 1100); setTimeout(() => tone(1100, .14, "square", .5, 1500), 110); burst(seatPos(p).x, seatPos(p).y, "#ffd23b", 16, 200); }
