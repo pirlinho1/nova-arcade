@@ -133,7 +133,24 @@
     if(!stock.length){ if(!waste.length) return; stock=waste.reverse().map(c=>({...c,up:false})); waste=[]; return; }
     const n=cfg.draw==="3"?3:1; for(let k=0;k<n&&stock.length;k++){ const c=stock.pop(); c.up=true; waste.push(c); }
   }
-  function checkWin(){ if(found.reduce((a,p)=>a+p.length,0)===52){ state="over"; clearInterval(timer); NovaAudio.stopMusic(); NovaAudio.play("win"); ovTitle.textContent="¡GANASTE!"; ovTitle.className="win"; ovMsg.textContent=`${moves} movimientos · ${timeEl.textContent}`; ovBtn.textContent="↻ Nuevo"; ov.classList.add("show"); } }
+  function checkWin(){ if(found.reduce((a,p)=>a+p.length,0)===52 && state==="play"){ winCascade(); } }
+  // ── cascada de victoria (cartas que caen y rebotan) ──
+  let cascade=null, casRaf=null;
+  function winCascade(){
+    clearInterval(timer); NovaAudio.stopMusic(); NovaAudio.play("win"); state="cascade";
+    const pool=[]; for(let i=0;i<4;i++){ const [fx,fy]=foundRect(i); for(let k=found[i].length-1;k>=0;k--) pool.push({card:found[i][k],x:fx,y:fy}); }
+    cascade={ pool, fall:[], spawn:0, t:0 }; casRaf=requestAnimationFrame(cascadeStep);
+  }
+  function cascadeStep(){
+    cascade.t++;
+    if(cascade.spawn<cascade.pool.length && cascade.t%3===0){ const s=cascade.pool[cascade.spawn++]; cascade.fall.push({card:s.card,x:s.x,y:s.y,vx:(Math.random()*2-1)*7,vy:-7-Math.random()*5}); if(cascade.spawn%5===0) NovaAudio.play("move"); }
+    cascade.fall.forEach(f=>{ f.vy+=0.55; f.x+=f.vx; f.y+=f.vy; if(f.y>cv.height-CH){ f.y=cv.height-CH; f.vy*=-0.72; f.vx*=0.99; } });
+    cascade.fall=cascade.fall.filter(f=> f.x>-CW-30 && f.x<cv.width+30);
+    draw(); cascade.fall.forEach(f=> drawCard(f.card,f.x,f.y,false));
+    if(cascade.spawn>=cascade.pool.length && cascade.fall.length<5){ cancelAnimationFrame(casRaf); finishWin(); return; }
+    casRaf=requestAnimationFrame(cascadeStep);
+  }
+  function finishWin(){ state="over"; ovTitle.textContent="¡GANASTE!"; ovTitle.className="win"; ovMsg.textContent=`${moves} movimientos · ${timeEl.textContent}`; ovBtn.textContent="↻ Nuevo"; ov.classList.add("show"); }
 
   // ── render ──
   function roundedCard(x,y,w,h,fill,stroke){ ctx.fillStyle=fill; ctx.strokeStyle=stroke; ctx.lineWidth=1.5; ctx.beginPath(); ctx.roundRect(x,y,w,h,8); ctx.fill(); ctx.stroke(); }
@@ -141,10 +158,17 @@
     if(!card.up){ roundedCard(x,y,CW,CH,css("--surface-2"),css("--border")); ctx.fillStyle=css("--accent"); ctx.globalAlpha=.4; ctx.beginPath(); ctx.roundRect(x+8,y+8,CW-16,CH-16,6); ctx.fill(); ctx.globalAlpha=1; return; }
     roundedCard(x,y,CW,CH,css("--surface-solid"), seld?css("--accent"):css("--border"));
     if(seld&&cfg.glow){ ctx.shadowColor=css("--accent"); ctx.shadowBlur=12; ctx.strokeStyle=css("--accent"); ctx.lineWidth=2.5; ctx.beginPath(); ctx.roundRect(x,y,CW,CH,8); ctx.stroke(); ctx.shadowBlur=0; }
-    ctx.fillStyle = RED.has(card.s)?css("--accent-2"):css("--text");
-    ctx.textAlign="left"; ctx.textBaseline="top"; ctx.font='700 18px "Chakra Petch"';
-    ctx.fillText(label(card), x+8, y+8);
-    ctx.textAlign="center"; ctx.font="34px serif"; ctx.fillText(card.s, x+CW/2, y+CH/2-10);
+    const col = RED.has(card.s) ? "#ff5b6e" : css("--text");
+    const rk = ({1:"A",11:"J",12:"Q",13:"K"}[card.r] || card.r);
+    ctx.fillStyle = col; ctx.textBaseline="middle";
+    // esquina superior izquierda (rango + palo)
+    ctx.textAlign="center"; ctx.font='700 16px "Chakra Petch"'; ctx.fillText(rk, x+13, y+16);
+    ctx.font='13px serif'; ctx.fillText(card.s, x+13, y+33);
+    // esquina inferior derecha (espejada)
+    ctx.font='700 16px "Chakra Petch"'; ctx.fillText(rk, x+CW-13, y+CH-16);
+    ctx.font='13px serif'; ctx.fillText(card.s, x+CW-13, y+CH-33);
+    // palo grande al centro
+    ctx.font="40px serif"; ctx.fillText(card.s, x+CW/2, y+CH/2);
   }
   function emptySlot(x,y,glyph){ ctx.strokeStyle=css("--border"); ctx.lineWidth=1.5; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.roundRect(x,y,CW,CH,8); ctx.stroke(); ctx.setLineDash([]); if(glyph){ ctx.fillStyle=css("--text-dim"); ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="30px serif"; ctx.fillText(glyph,x+CW/2,y+CH/2); } }
   let _cssCache={}; function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -167,6 +191,15 @@
     if(state!=="play") return;
     const rect=cv.getBoundingClientRect(); const x=(e.clientX-rect.left)*(cv.width/rect.width), y=(e.clientY-rect.top)*(cv.height/rect.height);
     trySelectThenMove(hit(x,y));
+  });
+  // doble clic: enviar la carta superior directo a una fundación si es posible
+  cv.addEventListener("dblclick", e=>{
+    if(state!=="play") return;
+    const rect=cv.getBoundingClientRect(); const x=(e.clientX-rect.left)*(cv.width/rect.width), y=(e.clientY-rect.top)*(cv.height/rect.height);
+    const h=hit(x,y); if(!h) return; let card=null, src=null;
+    if(h.zone==="waste" && waste.length){ card=waste[waste.length-1]; src={zone:"waste"}; }
+    else if(h.zone==="tab" && h.idx>=0){ const p=tableau[h.col]; if(h.idx===p.length-1 && p[h.idx].up){ card=p[h.idx]; src={zone:"tab",col:h.col,idx:h.idx}; } }
+    if(card) for(let i=0;i<4;i++) if(canFound(card,i)){ doMove(src,{zone:"found",i}); sel=null; flipExposed(); NovaAudio.play("point"); bump_noSelClear(); draw(); return; }
   });
   ovBtn.onclick=()=>{ if(state==="over"){ deal(); } start(); };
   const autoBtn=document.getElementById("auto");
