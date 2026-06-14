@@ -35,24 +35,48 @@
       const bet = BETS[betIdx];
       if (credits < bet) { resEl.textContent = "Sin créditos: Recarga."; return; }
       credits -= bet; updateHUD(); save();
+      resEl.classList.remove("big");
       deck = newDeck(); hand = deck.splice(0, 5); held = [false, false, false, false, false];
       phase = "draw"; resEl.textContent = "Elige cartas a mantener…"; $("deal").textContent = "🔄 Cambiar";
-      renderHand(); tone(440, .05); setTimeout(() => tone(550, .05), 60);
+      renderHand(false, [0, 1, 2, 3, 4]); dealSound(5);
     } else {
-      // cambiar las no retenidas
-      for (let i = 0; i < 5; i++) if (!held[i]) hand[i] = deck.splice(0, 1)[0];
-      renderHand(); evaluate(); phase = "deal"; $("deal").textContent = "🂠 Repartir";
+      // cambiar las no retenidas (con flip animado solo en las cambiadas)
+      const changed = [];
+      for (let i = 0; i < 5; i++) if (!held[i]) { hand[i] = deck.splice(0, 1)[0]; changed.push(i); }
+      renderHand(false, changed); dealSound(changed.length || 1);
+      setTimeout(evaluate, 260); phase = "deal"; $("deal").textContent = "🂠 Repartir";
     }
   }
+  function dealSound(n) { for (let i = 0; i < n; i++) setTimeout(() => tone(420 + i * 30, .04, "square", .3), i * 70); }
 
   function evaluate() {
     const res = score(hand);
     let win = 0, key = null;
     if (res) { key = res; const pd = PAYS.find(p => p.key === res); win = pd.pay * BETS[betIdx]; }
-    if (win > 0) { credits += win; resEl.textContent = "¡" + PAYS.find(p => p.key === key).name + "! +" + win; const big = win >= BETS[betIdx] * 9; winSound(big); }
-    else { resEl.textContent = "Sin premio. ¡Otra vez!"; tone(200, .15, "sawtooth", .3); }
+    if (win > 0) {
+      credits += win; const big = win >= BETS[betIdx] * 9;
+      resEl.textContent = "¡" + PAYS.find(p => p.key === key).name + "! +" + win;
+      resEl.classList.toggle("big", big);
+      // resaltar las cartas que forman la jugada
+      const winIdx = winningIndices(hand, key);
+      const cards = handEl.querySelectorAll(".pcard");
+      winIdx.forEach(i => cards[i] && cards[i].classList.add("win"));
+      winSound(big);
+    }
+    else { resEl.textContent = "Sin premio. ¡Otra vez!"; resEl.classList.remove("big"); tone(200, .15, "sawtooth", .3); }
     $("lastwin").textContent = win; updateHUD(); save(); renderPay(key);
     if (credits <= 0) resEl.textContent = "Sin créditos. Pulsa Recargar.";
+  }
+  // índices de las cartas que componen la jugada (para resaltar)
+  function winningIndices(h, key) {
+    if (["royal", "sflush", "flush", "straight", "full"].includes(key)) return [0, 1, 2, 3, 4];
+    const counts = {}; h.forEach((c, i) => (counts[c.r] = counts[c.r] || []).push(i));
+    const groups = Object.values(counts).sort((a, b) => b.length - a.length);
+    if (key === "four") return groups[0];
+    if (key === "three") return groups[0];
+    if (key === "twopair") return [...groups[0], ...groups[1]];
+    if (key === "jacks") return groups.find(g => g.length === 2) || [];
+    return [];
   }
   function winSound(big) { const seq = big ? [523, 659, 784, 1046, 1318] : [523, 659, 784]; seq.forEach((f, i) => setTimeout(() => tone(f, .14, "triangle", .5), i * 90)); }
 
@@ -89,13 +113,15 @@
     payEl.innerHTML = "";
     PAYS.forEach(p => { const d = document.createElement("div"); if (hot === p.key) d.className = "hot"; d.innerHTML = `<span>${p.name}</span><span>×${p.pay}</span>`; payEl.appendChild(d); });
   }
-  function renderHand(back) {
-    handEl.innerHTML = "";
+  function renderHand(back, animIdx) {
+    handEl.innerHTML = ""; animIdx = animIdx || [];
+    let anim = 0;
     for (let i = 0; i < 5; i++) {
       const el = document.createElement("div"); el.className = "pcard";
       if (back || !hand[i]) { el.classList.add("back"); handEl.appendChild(el); continue; }
       const c = hand[i], red = SUITS[c.s].r === 1;
       if (red) el.classList.add("red"); if (held[i]) el.classList.add("held");
+      if (animIdx.includes(i)) { el.classList.add("dealin"); el.style.animationDelay = (anim++ * 0.09) + "s"; }
       el.innerHTML = `<span class="hold-tag">MANTÉN</span><span class="r">${RANKS[c.r]}</span><span class="c">${SUITS[c.s].s}</span><span class="s">${SUITS[c.s].s}</span>`;
       el.onclick = () => { if (phase !== "draw") return; held[i] = !held[i]; el.classList.toggle("held"); tone(held[i] ? 600 : 400, .04, "sine", .35); };
       handEl.appendChild(el);
